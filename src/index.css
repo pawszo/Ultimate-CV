@@ -1,0 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer utilities {
+  /* Style do drukowania – ukrywa interfejs aplikacji i wyświetla tylko wygenerowane CV */
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .print-only {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+  }
+
+  /* Stylizacja renderowanego kodu Markdown */
+  .markdown-body {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    color: #1f2937;
+  }
+  .markdown-body h1 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.35rem;
+    margin-top: 1rem;
+    margin-bottom: 0.65rem;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .markdown-body h2 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-top: 0.9rem;
+    margin-bottom: 0.45rem;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 0.2rem;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .markdown-body h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.75rem;
+    margin-bottom: 0.35rem;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .markdown-body p {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .markdown-body ul {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .markdown-body li {
+    margin-bottom: 0.2rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .markdown-body strong {
+    font-weight: 600;
+    color: #111827;
+  }
+  .markdown-body blockquote {
+    border-left: 3px solid #3b82f6;
+    padding-left: 0.75rem;
+    color: #4b5563;
+    font-style: italic;
+    margin: 0.75rem 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .markdown-body hr {
+    border: 0;
+    border-top: 1px solid #e5e7eb;
+    margin: 0.85rem 0;
+  }
+
+  /* Warianty zagęszczenia (Density) optymalizujące zmieszczenie na pełnych stronach A4 */
+  .density-compact p, 
+  .density-compact li {
+    font-size: 0.78rem !important;
+    line-height: 1.38 !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .density-compact h1 {
+    font-size: 1.35rem !important;
+    margin-top: 0.6rem !important;
+    margin-bottom: 0.4rem !important;
+    padding-bottom: 0.2rem !important;
+  }
+  .density-compact h2 {
+    font-size: 1.05rem !important;
+    margin-top: 0.65rem !important;
+    margin-bottom: 0.3rem !important;
+    padding-bottom: 0.15rem !important;
+  }
+  .density-compact hr {
+    margin: 0.6rem 0 !important;
+  }
+  .density-compact ul {
+    margin-bottom: 0.35rem !important;
+  }
+
+  /* Wariant ultra-kompaktowy – zmniejsza czcionkę i marginesy, aby zmieścić bogate CV na 1 stronie */
+  .density-ultracompact p, 
+  .density-ultracompact li {
+    font-size: 0.72rem !important;
+    line-height: 1.32 !important;
+    margin-bottom: 0.18rem !important;
+  }
+  .density-ultracompact h1 {
+    font-size: 1.2rem !important;
+    margin-top: 0.45rem !important;
+    margin-bottom: 0.3rem !important;
+    padding-bottom: 0.15rem !important;
+  }
+  .density-ultracompact h2 {
+    font-size: 0.95rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    padding-bottom: 0.1rem !important;
+  }
+  .density-ultracompact hr {
+    margin: 0.45rem 0 !important;
+  }
+  .density-ultracompact ul {
+    margin-bottom: 0.25rem !important;
+    padding-left: 1.1rem !important;
+  }
+
+  /* Wariant przestrzenny – dla krótszych CV, by elegancko wypełniły pełną stronę */
+  .density-spacious p, 
+  .density-spacious li {
+    font-size: 0.92rem !important;
+    line-height: 1.58 !important;
+    margin-bottom: 0.65rem !important;
+  }
+  .density-spacious h1 {
+    font-size: 1.7rem !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.8rem !important;
+  }
+  .density-spacious h2 {
+    font-size: 1.25rem !important;
+    margin-top: 1.1rem !important;
+    margin-bottom: 0.55rem !important;
+  }
+  .density-spacious hr {
+    margin: 1.2rem 0 !important;
+  }
+
+  /* Stylizacja szablonu IT / Inżynieria (Software & DevOps) */
+  .prose-tech {
+    font-family: var(--font-sans);
+    color: #1e293b;
+    background-color: #ffffff;
+  }
+  .prose-tech h1 {
+    font-family: var(--font-sans);
+    font-size: 1.65rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    color: #0f172a !important;
+    border-bottom: 2px solid #0f172a !important;
+    padding-bottom: 0.35rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.55rem !important;
+  }
+  .prose-tech h2 {
+    font-family: var(--font-sans);
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #0369a1 !important;
+    border-bottom: 1.5px solid #0284c7 !important;
+    padding-bottom: 0.25rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.45rem !important;
+    background: transparent !important;
+    border-left: none !important;
+  }
+  .prose-tech h3 {
+    font-family: var(--font-sans);
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin-top: 0.6rem !important;
+    margin-bottom: 0.2rem !important;
+  }
+  .prose-tech code {
+    font-family: var(--font-mono);
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    background-color: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    padding: 0.08rem 0.35rem;
+    border-radius: 0.25rem;
+  }
+  .prose-tech strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+  .prose-tech ul {
+    list-style-type: disc !important;
+    padding-left: 1.25rem !important;
+    margin-bottom: 0.45rem !important;
+  }
+  .prose-tech li {
+    margin-bottom: 0.22rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .prose-tech hr {
+    border: 0;
+    border-top: 1px solid #e2e8f0 !important;
+    margin: 0.75rem 0 !important;
+  }
+}
