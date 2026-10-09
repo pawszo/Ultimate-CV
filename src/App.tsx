@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { UserProfile, AIQuestion, AIConsensus, TailoredResume, Skill, DocumentInput } from "./types";
+import { UserProfile, AIQuestion, TailoredResume, Skill, DocumentInput } from "./types";
 import { initialProfile } from "./defaultProfile";
 import { PersonalDetailsForm } from "./components/PersonalDetailsForm";
 import { ExperienceForm } from "./components/ExperienceForm";
@@ -11,17 +11,21 @@ import { DocInputForm } from "./components/DocInputForm";
 import { AIAdvisor } from "./components/AIAdvisor";
 import { TailoredResumeGenerator } from "./components/TailoredResumeGenerator";
 import { PdfImportModal } from "./components/PdfImportModal";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
+import { useLanguage } from "./i18n/LanguageContext";
 import { 
-  Sparkles, User, FileText, Lightbulb, ClipboardCopy, RefreshCw, 
-  Layers, Sliders, AlertCircle, CheckCircle, Download, Upload, Shield, 
+  Sparkles, User, FileText, Lightbulb, RefreshCw, 
+  AlertCircle, CheckCircle, Download, Upload, Shield, 
   X, LogOut, LogIn, Database, Settings, BookOpen, Briefcase, Award, PlusCircle,
-  FolderOpen, Globe2
+  FolderOpen, Globe2, Sliders
 } from "lucide-react";
 import { encryptProfile, decryptProfile } from "./utils/crypto";
 import { User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
 import { signInWithGoogle, logoutUser, saveProfileToCloud, loadProfileFromCloud, auth } from "./lib/firebase";
 
 export default function App() {
+  const { t, language, interpolate } = useLanguage();
+
   // Stan profilu kandydata, ładowany z localStorage lub predefiniowanych danych demo
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem("digital_resume_profile");
@@ -87,19 +91,19 @@ export default function App() {
     setApiError(null);
     try {
       const loggedUser = await signInWithGoogle();
-      showTemporarySuccess(`Zalogowano pomyślnie jako ${loggedUser.displayName || loggedUser.email}!`);
+      showTemporarySuccess(interpolate(t.loginSuccess, { name: loggedUser.displayName || loggedUser.email || "" }));
       
       // Po zalogowaniu sprawdzamy, czy użytkownik ma zapisany profil w chmurze
       const cloudProfile = await loadProfileFromCloud(loggedUser.uid);
       if (cloudProfile) {
-        if (confirm(`Wykryto zapisany profil w chmurze Firebase dla użytkownika ${loggedUser.displayName || loggedUser.email}. Czy chcesz go teraz wczytać i zastąpić obecne dane lokalne?`)) {
+        if (confirm(interpolate(t.confirmLoadCloudLogin, { name: loggedUser.displayName || loggedUser.email || "" }))) {
           setProfile(cloudProfile);
-          showTemporarySuccess("Pomyślnie wczytano stan profilu z chmury Firebase!");
+          showTemporarySuccess(t.cloudLoaded);
         }
       }
     } catch (err: any) {
       console.error(err);
-      setApiError("Błąd logowania przez Google. Jeśli jesteś w oknie podglądu (iframe), upewnij się, że zezwalasz na wyskakujące okienka (popups) lub otwórz aplikację w nowej karcie.");
+      setApiError(t.googleLoginError);
     } finally {
       setIsLoggingIn(false);
     }
@@ -109,7 +113,7 @@ export default function App() {
     setApiError(null);
     try {
       await logoutUser();
-      showTemporarySuccess("Wylogowano pomyślnie.");
+      showTemporarySuccess(t.logoutSuccess);
     } catch (err: any) {
       setApiError("Błąd podczas wylogowywania: " + err.message);
     }
@@ -121,7 +125,7 @@ export default function App() {
     setApiError(null);
     try {
       await saveProfileToCloud(user.uid, profile);
-      showTemporarySuccess("Kompletny stan Twojego profilu (wraz z analizami, wnioskami i załącznikami) został pomyślnie zapisany i zabezpieczony w chmurze Firebase!");
+      showTemporarySuccess(t.cloudSaved);
     } catch (err: any) {
       setApiError("Błąd zapisu w chmurze Firebase: " + err.message);
     } finally {
@@ -131,16 +135,16 @@ export default function App() {
 
   const handleLoadFromCloud = async () => {
     if (!user) return;
-    if (!confirm("Czy na pewno chcesz pobrać stan z chmury? Twoje aktualne lokalne zmiany zostaną nadpisane.")) return;
+    if (!confirm(t.confirmLoadCloud)) return;
     setIsCloudSyncing(true);
     setApiError(null);
     try {
       const cloudProfile = await loadProfileFromCloud(user.uid);
       if (cloudProfile) {
         setProfile(cloudProfile);
-        showTemporarySuccess("Pomyślnie pobrano i wczytano stan profilu z chmury Firebase!");
+        showTemporarySuccess(t.cloudLoaded);
       } else {
-        setApiError("Brak zapisanego profilu w chmurze dla tego konta Google. Kliknij 'Zapisz w chmurze', aby zapisać obecny stan.");
+        setApiError(t.cloudNoData);
       }
     } catch (err: any) {
       setApiError("Błąd odczytu z chmury Firebase: " + err.message);
@@ -157,7 +161,7 @@ export default function App() {
   // Pobranie pytań od AI przy pierwszym załadowaniu
   useEffect(() => {
     loadAIQuestions();
-  }, []);
+  }, [language]);
 
   // Metoda wywołująca endpoint sugerowania pytań na podstawie aktualnego profilu
   const loadAIQuestions = async () => {
@@ -166,7 +170,7 @@ export default function App() {
       const response = await fetch("/api/gemini/suggest-questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile }),
+        body: JSON.stringify({ profile, language }),
       });
       if (response.ok) {
         const data = await response.json();
@@ -179,6 +183,27 @@ export default function App() {
       setQuestions((prev) =>
         prev.length > 0
           ? prev
+          : language === "en"
+          ? [
+              {
+                id: "q_default_1",
+                field: "experience",
+                question: "What specific metrics, percentages, or milestones best demonstrate the impact of your recent roles?",
+                tip: "Hiring managers look for evidence of business outcomes and quantifiable delivery."
+              },
+              {
+                id: "q_default_2",
+                field: "skills",
+                question: "Which core tools, methodologies, or engineering practices do you excel at most?",
+                tip: "Accurate keywords help your profile pass ATS screening algorithms."
+              },
+              {
+                id: "q_default_3",
+                field: "achievements",
+                question: "What challenging project or complex problem solved are you proudest of?",
+                tip: "Problem-action-result success stories make you stand out from other candidates."
+              }
+            ]
           : [
               {
                 id: "q_default_1",
@@ -209,20 +234,10 @@ export default function App() {
               {
                 id: "q_default_1",
                 field: "experience",
-                question: "Jakie konkretne liczby, wskaźniki procentowe lub sukcesy najlepiej oddają efekty Twojej pracy na ostatnich stanowiskach?",
-                tip: "Rekruterzy i menedżerowie poszukują dowodów na realny wpływ na biznes i projekty."
-              },
-              {
-                id: "q_default_2",
-                field: "skills",
-                question: "Z jakimi kluczowymi narzędziami, metodykami lub technologiami pracujesz najchętniej?",
-                tip: "Precyzyjne słowa kluczowe ułatwiają przejście przez selekcję systemów ATS."
-              },
-              {
-                id: "q_default_3",
-                field: "achievements",
-                question: "Z jakiego trudnego projektu lub nieoczywistego problemu, który udało Ci się rozwiązać, jesteś najbardziej dumny?",
-                tip: "Historie sukcesu w formule problem-działanie-efekt tworzą wyróżniający się profil kandydata."
+                question: language === "en" 
+                  ? "What key metrics or milestones best represent your impact?" 
+                  : "Jakie konkretne liczby lub sukcesy najlepiej oddają efekty Twojej pracy?",
+                tip: "Pokaż mierzalne rezultaty."
               }
             ]
       );
@@ -233,10 +248,9 @@ export default function App() {
 
   // Dodanie dedukowanej umiejętności z wniosków AI do oficjalnego profilu
   const handleAddSkillFromConclusion = (skillName: string, category: string) => {
-    // Sprawdzenie, czy już istnieje taka umiejętność
     const exists = profile.skills.some((s) => s.name.toLowerCase() === skillName.toLowerCase());
     if (exists) {
-      showTemporarySuccess(`Umiejętność "${skillName}" już znajduje się w Twoim profilu!`);
+      showTemporarySuccess(interpolate(t.skillAlreadyExists, { name: skillName }));
       return;
     }
 
@@ -251,52 +265,51 @@ export default function App() {
       ...profile,
       skills: [...profile.skills, newSkill],
     });
-
-    showTemporarySuccess(`Dodano umiejętność: "${skillName}" do sekcji "${category}"!`);
+    showTemporarySuccess(language === "en" ? `Skill "${skillName}" added to your profile!` : `Dodano "${skillName}" do listy umiejętności!`);
   };
 
-  // Usuwanie pojedynczego wniosku z listy
-  const handleDeleteConclusion = (indexToDelete: number) => {
+  // Usunięcie wniosku przez użytkownika
+  const handleDeleteConclusion = (indexToRemove: number) => {
     setProfile({
       ...profile,
-      conclusions: profile.conclusions.filter((_, idx) => idx !== indexToDelete)
+      conclusions: profile.conclusions.filter((_, idx) => idx !== indexToRemove),
     });
   };
 
-  // Obsługa analizy luźnego tekstu lub dokumentu i wyciągania z niego nowych faktów/wniosków
-  const handleAnalyzeDocumentText = async (inputText: string) => {
+  // Analizowanie tekstu / linku i wyciąganie wniosków przez model Gemini
+  const handleAnalyzeDocumentText = async (text: string) => {
     setIsAnalyzingDoc(true);
     setApiError(null);
     try {
       const response = await fetch("/api/gemini/draw-conclusions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentProfile: profile, inputText }),
+        body: JSON.stringify({ text, profile, language }),
       });
 
       if (!response.ok) {
-        throw new Error("Błąd podczas wyciągania wniosków przez AI.");
+        throw new Error("Błąd podczas analizy dokumentu.");
       }
 
       const data = await response.json();
-      
-      // Integrujemy nowe wyekstrahowane wnioski (conclusions) oraz ewentualne suche fakty
-      const newConclusions: AIConsensus[] = data.conclusions || [];
-      const extracted = data.extractedFacts || {};
+      const newConclusions = data.conclusions || [];
+      const extractedSkills = data.extractedSkills || [];
 
-      let updatedSkills = [...profile.skills];
-      if (extracted.skills && Array.isArray(extracted.skills)) {
-        extracted.skills.forEach((skillName: string) => {
-          if (!updatedSkills.some(s => s.name.toLowerCase() === skillName.toLowerCase())) {
-            updatedSkills.push({
-              id: "sk-ext-" + Math.random(),
-              name: skillName,
-              category: "Umiejętności techniczne",
-              proficiency: "Średni"
-            });
-          }
-        });
-      }
+      // Scalanie nowo wyekstrahowanych umiejętności bez dublowania
+      const existingSkillNames = new Set(profile.skills.map(s => s.name.toLowerCase()));
+      const updatedSkills = [...profile.skills];
+
+      extractedSkills.forEach((sk: any) => {
+        if (!existingSkillNames.has(sk.name.toLowerCase())) {
+          updatedSkills.push({
+            id: "sk-extracted-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+            name: sk.name,
+            category: sk.category || (language === "en" ? "Other" : "Inne"),
+            proficiency: sk.proficiency || "Średni"
+          });
+          existingSkillNames.add(sk.name.toLowerCase());
+        }
+      });
 
       setProfile(prev => ({
         ...prev,
@@ -304,11 +317,11 @@ export default function App() {
         conclusions: [...newConclusions, ...prev.conclusions]
       }));
 
-      showTemporarySuccess("AI przeanalizowało treść i zaktualizowało listę wniosków i umiejętności!");
-      setActiveTab("advisor"); // Przenosimy użytkownika do doradcy, by zobaczył nowe wnioski!
+      showTemporarySuccess(t.aiDocAnalyzedNotice);
+      setActiveTab("advisor");
     } catch (err: any) {
       console.error(err);
-      setApiError("Błąd analizy tekstu. Upewnij się, że masz skonfigurowany klucz GEMINI_API_KEY.");
+      setApiError(language === "en" ? "Text analysis error. Please ensure GEMINI_API_KEY is configured." : "Błąd analizy tekstu. Upewnij się, że masz skonfigurowany klucz GEMINI_API_KEY.");
     } finally {
       setIsAnalyzingDoc(false);
     }
@@ -322,7 +335,7 @@ export default function App() {
       const response = await fetch("/api/gemini/parse-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdfBase64: base64 }),
+        body: JSON.stringify({ pdfBase64: base64, language }),
       });
 
       if (!response.ok) {
@@ -334,12 +347,11 @@ export default function App() {
       setParsedPdfData(parsedData);
       setShowPdfImportModal(true);
 
-      // Automatycznie dodajemy wzmiankę o zaimportowanym pliku do historii dokumentów
       const docInput: DocumentInput = {
         id: "doc-pdf-" + Date.now(),
-        title: `Zaimportowano: ${fileName}`,
+        title: `${language === "en" ? "Imported:" : "Zaimportowano:"} ${fileName}`,
         type: "document",
-        content: `Dane automatycznie zaimportowane z pliku CV: ${fileName}. Wykryto ${parsedData.experience?.length || 0} stanowisk, ${parsedData.education?.length || 0} szkół, ${parsedData.skills?.length || 0} umiejętności.`,
+        content: `PDF: ${fileName}. Detected ${parsedData.experience?.length || 0} jobs, ${parsedData.education?.length || 0} schools, ${parsedData.skills?.length || 0} skills.`,
         addedAt: new Date().toISOString().split("T")[0],
       };
 
@@ -348,10 +360,10 @@ export default function App() {
         documents: [docInput, ...prev.documents]
       }));
 
-      showTemporarySuccess("Pomyślnie przeanalizowano plik PDF! Przejrzyj i wybierz dane do zaimportowania.");
+      showTemporarySuccess(t.pdfAnalyzedNotice);
     } catch (error: any) {
       console.error("Error parsing PDF:", error);
-      setApiError("Błąd analizy PDF: " + (error.message || "Upewnij się, że plik nie jest uszkodzony i klucz API działa."));
+      setApiError("Błąd analizy PDF: " + (error.message || "Błąd pliku."));
     } finally {
       setIsParsingPdf(false);
     }
@@ -361,27 +373,23 @@ export default function App() {
   const handleAnswerQuestion = async (q: AIQuestion, answerText: string) => {
     const newDoc: DocumentInput = {
       id: "doc-ans-" + Date.now(),
-      title: `Odpowiedź na pytanie: "${q.question}"`,
+      title: `${language === "en" ? "Answer to:" : "Odpowiedź na pytanie:"} "${q.question}"`,
       type: "text",
       content: answerText,
       addedAt: new Date().toISOString().split("T")[0]
     };
 
-    // Dodajemy odpowiedź do dokumentów użytkownika
     setProfile(prev => ({
       ...prev,
       documents: [newDoc, ...prev.documents]
     }));
 
-    // Szybko usuwamy to pytanie z listy dostępnych pytań, by użytkownik widział postęp
     setQuestions(prev => prev.filter(item => item.id !== q.id));
-
-    // Automatycznie analizujemy odpowiedź, aby wyciągnąć ewentualne wnioski
     await handleAnalyzeDocumentText(`Pytanie: ${q.question}\nOdpowiedź: ${answerText}`);
   };
 
   // Obsługa dopasowywania i generowania CV na żądanie pod ofertę pracy
-  const handleGenerateTailoredResume = async (jobOfferText: string, includePhoto: boolean, templateId: string) => {
+  const handleGenerateTailoredResume = async (jobOfferText: string, includePhoto: boolean, templateId: string, resumeLanguage?: string) => {
     setIsGeneratingResume(true);
     setApiError(null);
     try {
@@ -393,7 +401,8 @@ export default function App() {
           conclusions: profile.conclusions,
           jobOffer: jobOfferText,
           includePhoto,
-          templateId
+          templateId,
+          resumeLanguage: resumeLanguage || language
         })
       });
 
@@ -403,10 +412,10 @@ export default function App() {
 
       const data = await response.json();
       setTailoredResume(data);
-      showTemporarySuccess("Pomyślnie wygenerowano CV perfekcyjnie dopasowane do oferty!");
+      showTemporarySuccess(t.resumeGeneratedSuccess);
     } catch (err: any) {
       console.error(err);
-      setApiError("Nie udało się dopasować CV. Spróbuj ponownie lub sprawdź swój klucz API.");
+      setApiError(language === "en" ? "Failed to tailor resume. Please retry or check API key." : "Nie udało się dopasować CV. Spróbuj ponownie lub sprawdź swój klucz API.");
     } finally {
       setIsGeneratingResume(false);
     }
@@ -414,16 +423,16 @@ export default function App() {
 
   // Reset do predefiniowanych danych demonstracyjnych (Jan Kowalski)
   const handleResetToDemo = () => {
-    if (confirm("Czy na pewno chcesz przywrócić domyślne dane demonstracyjne? Wszystkie Twoje modyfikacje zostaną zastąpione.")) {
+    if (confirm(t.confirmResetDemo)) {
       setProfile(initialProfile);
       setTailoredResume(null);
-      showTemporarySuccess("Przywrócono przykładowy profil zawodowy.");
+      showTemporarySuccess(t.demoRestored);
     }
   };
 
   // Wyczyść profil (stwórz czysty szablon od zera)
   const handleClearProfile = () => {
-    if (confirm("Czy na pewno chcesz wyczyścić cały profil i zacząć od zera?")) {
+    if (confirm(t.confirmClear)) {
       setProfile({
         personal: { name: "", email: "", phone: "", website: "", linkedin: "", location: "", bio: "", photo: "" },
         experience: [],
@@ -436,7 +445,7 @@ export default function App() {
       });
       setTailoredResume(null);
       setQuestions([]);
-      showTemporarySuccess("Wyczyszczono profil. Możesz teraz zacząć od zera!");
+      showTemporarySuccess(t.profileCleared);
     }
   };
 
@@ -462,7 +471,7 @@ export default function App() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      showTemporarySuccess("Pomyślnie wyeksportowano bezpieczną, zaszyfrowaną kopię zapasową (.cvp)!");
+      showTemporarySuccess(t.backupExported);
     } catch (err: any) {
       setApiError("Błąd podczas eksportowania profilu: " + err.message);
     }
@@ -480,15 +489,15 @@ export default function App() {
         const decryptedProfile = decryptProfile(text);
         if (decryptedProfile) {
           setProfile(decryptedProfile);
-          setShowOnboarding(false); // Zamknij powitalne okno po udanym imporcie
-          showTemporarySuccess("Pomyślnie odszyfrowano i zaimportowano profil z pliku kopii zapasowej (.cvp)!");
+          setShowOnboarding(false);
+          showTemporarySuccess(t.backupImported);
         }
       } catch (err: any) {
         setApiError("Nie udało się odczytać pliku kopii zapasowej: " + err.message);
       }
     };
     reader.readAsText(file);
-    e.target.value = ""; // reset inputu
+    e.target.value = "";
   };
 
   // Obsługa akcji z okna powitalnego
@@ -504,7 +513,7 @@ export default function App() {
       conclusions: []
     });
     setShowOnboarding(false);
-    showTemporarySuccess("Rozpoczęto tworzenie nowego profilu CV od zera!");
+    showTemporarySuccess(t.profileCleared);
   };
 
   const handleOnboardingLoginAndLoad = async () => {
@@ -512,20 +521,20 @@ export default function App() {
     setApiError(null);
     try {
       const loggedUser = await signInWithGoogle();
-      showTemporarySuccess(`Zalogowano pomyślnie jako ${loggedUser.displayName || loggedUser.email}!`);
+      showTemporarySuccess(interpolate(t.loginSuccess, { name: loggedUser.displayName || loggedUser.email || "" }));
       
       const cloudProfile = await loadProfileFromCloud(loggedUser.uid);
       if (cloudProfile) {
         setProfile(cloudProfile);
         setShowOnboarding(false);
-        showTemporarySuccess("Pomyślnie pobrano i wczytano stan profilu z chmury Firebase!");
+        showTemporarySuccess(t.cloudLoaded);
       } else {
         setShowOnboarding(false);
-        showTemporarySuccess("Zalogowano pomyślnie! Rozpoczynasz z nowym profilem (brak zapisanego stanu w chmurze).");
+        showTemporarySuccess(language === "en" ? "Signed in! Starting with fresh profile." : "Zalogowano pomyślnie! Rozpoczynasz z nowym profilem.");
       }
     } catch (err: any) {
       console.error(err);
-      setApiError("Błąd logowania przez Google. Otwórz aplikację w nowej karcie (podgląd iframe może blokować popupy).");
+      setApiError(t.googleLoginError);
     } finally {
       setIsLoggingIn(false);
     }
@@ -552,24 +561,27 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base font-extrabold text-slate-800 tracking-tight font-display">
-                Cyfrowy Kreator CV
+                {t.appTitle}
               </h1>
               <p className="text-[10px] text-slate-400 font-semibold">
-                Inteligentny Asystent Kariery & AI Generator
+                {t.appSubtitle}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* PRZEŁĄCZNIK JĘZYKA UI (PL / EN) */}
+            <LanguageSwitcher />
+
             {/* Przycisk szczegółów konta (Moje Dane i Statystyki) */}
             <button
               onClick={() => setShowAccountDetails(true)}
               className="px-3 py-1.5 bg-slate-50 hover:bg-slate-150 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Zobacz szczegóły swojego konta, statystyki profilu i opcje synchronizacji"
+              title={t.accountDetails}
             >
               <Settings className="w-3.5 h-3.5 text-slate-500 animate-spin-slow" />
-              <span className="hidden sm:inline">Szczegóły konta</span>
-              <span className="sm:hidden">Konto</span>
+              <span className="hidden sm:inline">{t.accountDetails}</span>
+              <span className="sm:hidden">{t.account}</span>
             </button>
 
             {/* Panel logowania bezpośrednio w głównym pasku */}
@@ -598,7 +610,7 @@ export default function App() {
                 <button
                   onClick={handleGoogleLogout}
                   className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-                  title="Wyloguj się"
+                  title={t.logout}
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -614,7 +626,7 @@ export default function App() {
                 ) : (
                   <LogIn className="w-3.5 h-3.5" />
                 )}
-                <span>Zaloguj przez Google</span>
+                <span>{t.loginWithGoogle}</span>
               </button>
             )}
           </div>
@@ -636,7 +648,7 @@ export default function App() {
           <div className="bg-rose-50 border border-rose-150 text-rose-800 px-4 py-3 rounded-xl flex items-start gap-2.5 shadow-xs text-xs">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">Błąd Integracji AI / Systemu:</p>
+              <p className="font-semibold">{t.apiErrorPrefix}</p>
               <p className="text-[11px] text-rose-700 mt-0.5">{apiError}</p>
             </div>
           </div>
@@ -648,16 +660,19 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="bg-gradient-to-tr from-slate-900 to-indigo-950 p-6 text-white text-center relative">
+              <div className="absolute top-4 right-4">
+                <LanguageSwitcher />
+              </div>
               <div className="mx-auto w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3">
                 <Sparkles className="w-6 h-6 text-indigo-400 animate-pulse" />
               </div>
-              <h2 className="text-xl font-bold font-display">Cyfrowy Kreator CV</h2>
-              <p className="text-xs text-indigo-200/80 mt-1">Inteligentny generator CV ze wsparciem Gemini AI</p>
+              <h2 className="text-xl font-bold font-display">{t.onboardingTitle}</h2>
+              <p className="text-xs text-indigo-200/80 mt-1">{t.onboardingSubtitle}</p>
             </div>
 
             <div className="p-6 space-y-4">
               <p className="text-xs text-slate-500 text-center">
-                Wybierz jedną z poniższych opcji, aby rozpocząć pracę ze swoim życiorysem:
+                {t.onboardingDesc}
               </p>
 
               {/* Opcja 1: Nowe CV */}
@@ -669,8 +684,8 @@ export default function App() {
                   <PlusCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800">Stwórz nowe CV</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Rozpocznij wypełnianie pustego profilu kariery krok po kroku.</p>
+                  <h4 className="text-xs font-bold text-slate-800">{t.onboardingNew}</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{t.onboardingNewSub}</p>
                 </div>
               </button>
 
@@ -683,8 +698,8 @@ export default function App() {
                   <FolderOpen className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800">Wczytaj dane z pliku kopii</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Wczytaj wcześniej pobrany, bezpiecznie zaszyfrowany plik .cvp.</p>
+                  <h4 className="text-xs font-bold text-slate-800">{t.onboardingImport}</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{t.onboardingImportSub}</p>
                 </div>
               </button>
 
@@ -703,9 +718,9 @@ export default function App() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    Zaloguj się i pobierz z Chmury
+                    {t.onboardingCloud}
                   </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Połącz konto Google z Firebase i pobierz swój zapisany stan.</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{t.onboardingCloudSub}</p>
                 </div>
               </button>
             </div>
@@ -715,9 +730,9 @@ export default function App() {
                 onClick={() => setShowOnboarding(false)}
                 className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold transition-colors cursor-pointer"
               >
-                Pomiń (kontynuuj z obecnymi danymi)
+                {t.onboardingSkip}
               </button>
-              <span className="text-[10px] text-slate-300 font-medium">v1.1 Bezpieczna Kopia</span>
+              <span className="text-[10px] text-slate-300 font-medium">{t.onboardingBadge}</span>
             </div>
           </div>
         </div>
@@ -731,20 +746,23 @@ export default function App() {
             <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-sm font-display">Szczegóły Konta & Synchronizacja</h3>
+                <h3 className="font-bold text-sm font-display">{t.accountModalTitle}</h3>
               </div>
-              <button
-                onClick={() => setShowAccountDetails(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+                <button
+                  onClick={() => setShowAccountDetails(false)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
               {/* Sekcja Profilu użytkownika */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">Tożsamość</h4>
+                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">{t.identity}</h4>
                 {user ? (
                   <div className="flex items-center gap-3">
                     {user.photoURL ? (
@@ -755,17 +773,17 @@ export default function App() {
                       </div>
                     )}
                     <div>
-                      <p className="text-xs font-bold text-slate-800">{user.displayName || "Użytkownik"}</p>
+                      <p className="text-xs font-bold text-slate-800">{user.displayName || "User"}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">{user.email}</p>
                       <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full mt-1.5">
-                        <Database className="w-2.5 h-2.5" /> Połączono z Firebase Cloud
+                        <Database className="w-2.5 h-2.5" /> {t.connectedCloud}
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-2">
-                    <p className="text-xs text-slate-500">Pracujesz obecnie w trybie całkowicie lokalnym (offline).</p>
-                    <p className="text-[11px] text-slate-400 mt-1">Zaloguj się przez Google, aby synchronizować dane na różnych urządzeniach i zapobiec ich utracie.</p>
+                    <p className="text-xs text-slate-500">{t.offlineModeNotice}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{t.offlineModeSub}</p>
                     <button
                       onClick={() => {
                         setShowAccountDetails(false);
@@ -773,7 +791,7 @@ export default function App() {
                       }}
                       className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
                     >
-                      <LogIn className="w-3.5 h-3.5" /> Zaloguj przez Google
+                      <LogIn className="w-3.5 h-3.5" /> {t.loginWithGoogle}
                     </button>
                   </div>
                 )}
@@ -781,49 +799,49 @@ export default function App() {
 
               {/* Sekcja Statystyk Danych */}
               <div>
-                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">Zawartość Twojego Profilu</h4>
+                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">{t.profileContents}</h4>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5">
                     <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Doświadczenie</span>
-                      <strong className="text-slate-800 font-bold">{profile.experience.length} pozycji</strong>
+                      <span className="block text-[11px] text-slate-400">{t.statExp}</span>
+                      <strong className="text-slate-800 font-bold">{profile.experience.length} {t.positionsCount}</strong>
                     </div>
                   </div>
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5">
                     <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Edukacja</span>
-                      <strong className="text-slate-800 font-bold">{profile.education.length} wpisy</strong>
+                      <span className="block text-[11px] text-slate-400">{t.statEdu}</span>
+                      <strong className="text-slate-800 font-bold">{profile.education.length} {t.entriesCount}</strong>
                     </div>
                   </div>
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5">
                     <Sliders className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Umiejętności</span>
-                      <strong className="text-slate-800 font-bold">{profile.skills.length} pozycji</strong>
+                      <span className="block text-[11px] text-slate-400">{t.statSkills}</span>
+                      <strong className="text-slate-800 font-bold">{profile.skills.length} {t.positionsCount}</strong>
                     </div>
                   </div>
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5">
                     <Globe2 className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Języki obce</span>
-                      <strong className="text-slate-800 font-bold">{profile.languages?.length || 0} języków</strong>
+                      <span className="block text-[11px] text-slate-400">{t.statLangs}</span>
+                      <strong className="text-slate-800 font-bold">{profile.languages?.length || 0} {t.langsCount}</strong>
                     </div>
                   </div>
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5 col-span-2">
                     <Award className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Osiągnięcia</span>
-                      <strong className="text-slate-800 font-bold">{profile.achievements.length} nagrody</strong>
+                      <span className="block text-[11px] text-slate-400">{t.statAch}</span>
+                      <strong className="text-slate-800 font-bold">{profile.achievements.length} {t.awardsCount}</strong>
                     </div>
                   </div>
                   <div className="p-3 bg-white border border-slate-150 rounded-xl flex items-center gap-2.5 col-span-2">
                     <FileText className="w-4 h-4 text-slate-400 shrink-0" />
                     <div>
-                      <span className="block text-[11px] text-slate-400">Analizy, wnioski i skany załączników</span>
+                      <span className="block text-[11px] text-slate-400">{t.statDocs}</span>
                       <strong className="text-slate-800 font-bold">
-                        {profile.documents?.length || 0} załączników, {profile.conclusions?.length || 0} wniosków AI
+                        {interpolate(t.attachmentsAndConclusions, { docs: profile.documents?.length || 0, conclusions: profile.conclusions?.length || 0 })}
                       </strong>
                     </div>
                   </div>
@@ -832,7 +850,7 @@ export default function App() {
 
               {/* Sekcja Operacji Bezpieczeństwa */}
               <div>
-                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">Operacje Bezpieczeństwa & Pliki</h4>
+                <h4 className="text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-3">{t.securityAndFiles}</h4>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <button
@@ -840,7 +858,7 @@ export default function App() {
                       className="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5 text-emerald-600" />
-                      Eksportuj do .cvp
+                      {t.exportToCvp}
                     </button>
                     <button
                       onClick={() => {
@@ -850,7 +868,7 @@ export default function App() {
                       className="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-indigo-600" />
-                      Wczytaj z .cvp
+                      {t.importFromCvp}
                     </button>
                   </div>
 
@@ -862,7 +880,7 @@ export default function App() {
                         className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Database className="w-3.5 h-3.5" />
-                        Zapisz w chmurze
+                        {t.saveInCloud}
                       </button>
                       <button
                         onClick={handleLoadFromCloud}
@@ -870,7 +888,7 @@ export default function App() {
                         className="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
-                        Wczytaj z chmury
+                        {t.loadFromCloud}
                       </button>
                     </div>
                   )}
@@ -878,25 +896,25 @@ export default function App() {
                   <div className="flex gap-2 pt-2 border-t border-slate-100">
                     <button
                       onClick={() => {
-                        if (confirm("Czy przywrócić wbudowane dane demonstracyjne? Twoje obecne zmiany zostaną utracone.")) {
+                        if (confirm(t.confirmResetDemo)) {
                           handleResetToDemo();
                           setShowAccountDetails(false);
                         }
                       }}
                       className="flex-1 py-1.5 text-[11px] text-slate-500 hover:text-slate-800 font-medium hover:bg-slate-50 rounded-lg transition-colors cursor-pointer text-center"
                     >
-                      Zresetuj do demo
+                      {t.resetToDemo}
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm("Czy na pewno chcesz całkowicie wyczyścić profil kariery? Operacja usunie wszystkie dane.")) {
+                        if (confirm(t.confirmClearAccount)) {
                           handleClearProfile();
                           setShowAccountDetails(false);
                         }
                       }}
                       className="flex-1 py-1.5 text-[11px] text-rose-500 hover:text-rose-700 font-medium hover:bg-rose-50 rounded-lg transition-colors cursor-pointer text-center"
                     >
-                      Wyczyść wszystko
+                      {t.clearEverything}
                     </button>
                   </div>
                 </div>
@@ -908,7 +926,7 @@ export default function App() {
                 onClick={() => setShowAccountDetails(false)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
-                Zamknij
+                {t.close}
               </button>
             </div>
           </div>
@@ -1003,15 +1021,15 @@ export default function App() {
         currentProfile={profile}
         onApply={(updatedProfile) => {
           setProfile(updatedProfile);
-          showTemporarySuccess("Pomyślnie scalono i zaimportowano wybrane dane z Twojego CV PDF!");
+          showTemporarySuccess(t.pdfImportSuccess);
         }}
       />
 
       {/* STOPKA - ukrywana podczas drukowania */}
       <footer className="no-print bg-white border-t border-slate-100 py-6 mt-12 mb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-1">
-          <p className="text-xs text-slate-400 font-medium">Cyfrowy Kreator CV • Wspierany przez Gemini Flash</p>
-          <p className="text-[10px] text-slate-300">Projekt wspierany przez doradców kariery. Wszystkie Twoje dane są zapisywane lokalnie i w zabezpieczonej chmurze.</p>
+          <p className="text-xs text-slate-400 font-medium">{t.footerTitle}</p>
+          <p className="text-[10px] text-slate-300">{t.footerSub}</p>
         </div>
       </footer>
 
@@ -1028,8 +1046,8 @@ export default function App() {
               }`}
             >
               <User className={`w-5 h-5 mb-0.5 transition-transform ${activeTab === "profile" ? "scale-110 text-blue-600" : "text-slate-400"}`} />
-              <span className="hidden xs:inline">1. Profil Kariery</span>
-              <span className="xs:hidden">Profil</span>
+              <span className="hidden xs:inline">{t.tabProfileLong}</span>
+              <span className="xs:hidden">{t.tabProfileShort}</span>
             </button>
 
             <button
@@ -1041,8 +1059,8 @@ export default function App() {
               }`}
             >
               <FileText className={`w-5 h-5 mb-0.5 transition-transform ${activeTab === "docs" ? "scale-110 text-blue-600" : "text-slate-400"}`} />
-              <span className="hidden xs:inline">2. Skaner i Dokumenty</span>
-              <span className="xs:hidden">Dokumenty</span>
+              <span className="hidden xs:inline">{t.tabDocsLong}</span>
+              <span className="xs:hidden">{t.tabDocsShort}</span>
             </button>
 
             <button
@@ -1061,8 +1079,8 @@ export default function App() {
                   </span>
                 )}
               </div>
-              <span className="hidden xs:inline">3. Doradca AI i Wnioski</span>
-              <span className="xs:hidden">Doradca AI</span>
+              <span className="hidden xs:inline">{t.tabAdvisorLong}</span>
+              <span className="xs:hidden">{t.tabAdvisorShort}</span>
             </button>
 
             <button
@@ -1074,8 +1092,8 @@ export default function App() {
               }`}
             >
               <Sparkles className={`w-5 h-5 mb-0.5 transition-transform ${activeTab === "tailor" ? "scale-110 text-indigo-500" : "text-slate-400"}`} />
-              <span className="hidden xs:inline">4. Dopasuj pod Ofertę</span>
-              <span className="xs:hidden">Dopasuj</span>
+              <span className="hidden xs:inline">{t.tabTailorLong}</span>
+              <span className="xs:hidden">{t.tabTailorShort}</span>
             </button>
           </nav>
         </div>

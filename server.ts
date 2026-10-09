@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -137,14 +138,16 @@ function getDefaultQuestions(profile: any) {
 
 // 1. Sugerowanie inteligentnych pytań na podstawie profilu
 app.post("/api/gemini/suggest-questions", async (req, res) => {
-  const { profile } = req.body || {};
+  const { profile, language = "pl" } = req.body || {};
+  const isEnglish = language === "en";
 
   // Sprawdzenie cache
   const cacheKey = JSON.stringify({
     name: profile?.personal?.name,
     expCount: profile?.experience?.length || 0,
     skillsCount: profile?.skills?.length || 0,
-    achCount: profile?.achievements?.length || 0
+    achCount: profile?.achievements?.length || 0,
+    lang: language
   });
 
   const cached = questionsCache.get(cacheKey);
@@ -166,7 +169,13 @@ app.post("/api/gemini/suggest-questions", async (req, res) => {
       achievements: (profile?.achievements || []).map((a: any) => a.title)
     };
 
-    const prompt = `Analizujesz profil zawodowy użytkownika w celu wygenerowania 3-4 spersonalizowanych, inteligentnych pytań i praktycznych wskazówek, które pomogą mu uzupełnić luki w życiorysie zawodowym.
+    const prompt = isEnglish
+      ? `Analyze the following candidate profile to generate 3-4 personalized, insightful interview questions and actionable career tips to fill gaps in their resume.
+Current profile data:
+${JSON.stringify(compactProfile, null, 2)}
+
+Generate the questions and tips strictly in ENGLISH. Inquire about impact, metrics, tools, and missing sections.`
+      : `Analizujesz profil zawodowy użytkownika w celu wygenerowania 3-4 spersonalizowanych, inteligentnych pytań i praktycznych wskazówek, które pomogą mu uzupełnić luki w życiorysie zawodowym.
 Oto aktualne dane profilu:
 ${JSON.stringify(compactProfile, null, 2)}
 
@@ -175,7 +184,9 @@ Wygeneruj pytania i wskazówki w języku polskim. Jeśli profil jest prawie pust
     const response = await generateWithFallback(ai, {
       contents: prompt,
       config: {
-        systemInstruction: "Jesteś ekspertem rekrutacji i doradcą kariery. Twoim celem jest zadawanie głębokich, konstruktywnych pytań, które pomogą użytkownikowi stworzyć nieskazitelny profil zawodowy.",
+        systemInstruction: isEnglish
+          ? "You are an elite career advisor and technical recruiter. Ask deep, constructive questions to help users build a flawless profile."
+          : "Jesteś ekspertem rekrutacji i doradcą kariery. Twoim celem jest zadawanie głębokich, konstruktywnych pytań, które pomogą użytkownikowi stworzyć nieskazitelny profil zawodowy.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -186,9 +197,9 @@ Wygeneruj pytania i wskazówki w języku polskim. Jeśli profil jest prawie pust
                 type: Type.OBJECT,
                 properties: {
                   id: { type: Type.STRING },
-                  field: { type: Type.STRING, description: "Jakiej sekcji profilu dotyczy pytanie (np. 'experience', 'skills', 'achievements', 'personal', 'education')" },
-                  question: { type: Type.STRING, description: "Konkretne, profesjonalne pytanie po polsku" },
-                  tip: { type: Type.STRING, description: "Wskazówka dlaczego to pytanie jest ważne i jak na nie odpowiedzieć (np. 'Podanie konkretnych liczb przyciąga wzrok rekruterów')" }
+                  field: { type: Type.STRING, description: "Section name (e.g. 'experience', 'skills', 'achievements', 'personal', 'education')" },
+                  question: { type: Type.STRING, description: isEnglish ? "Specific professional question in English" : "Konkretne, profesjonalne pytanie po polsku" },
+                  tip: { type: Type.STRING, description: isEnglish ? "Tip on why this question matters and how to answer" : "Wskazówka dlaczego to pytanie jest ważne i jak na nie odpowiedzieć" }
                 },
                 required: ["id", "field", "question", "tip"]
               }
@@ -221,9 +232,23 @@ Wygeneruj pytania i wskazówki w języku polskim. Jeśli profil jest prawie pust
 app.post("/api/gemini/draw-conclusions", async (req, res) => {
   try {
     const ai = getGeminiClient();
-    const { currentProfile, inputText } = req.body;
+    const { currentProfile, profile, inputText, text, language = "pl" } = req.body;
+    const resolvedProfile = currentProfile || profile || {};
+    const resolvedText = inputText || text || "";
+    const isEnglish = language === "en";
 
-    const prompt = `Przeanalizuj poniższy tekst wejściowy (może to być opis stanowiska, skopiowany dokument, link z treścią lub luźne notatki użytkownika) i stwórz na jego podstawie inteligentne wnioski (conclusions) oraz wyciągnij konkretne suche fakty (faktoring doświadczenia, umiejętności, edukacji), aby rozbudować profil zawodowy.
+    const prompt = isEnglish
+      ? `Analyze the following input text (job description, performance review, notes, or resume extract) and deduce intelligent conclusions (inferred competencies) as well as concrete extracted facts to enrich the professional profile.
+Current profile:
+${JSON.stringify(resolvedProfile, null, 2)}
+
+New text/document to analyze:
+---
+${resolvedText}
+---
+
+Generate conclusions and facts strictly in ENGLISH.`
+      : `Przeanalizuj poniższy tekst wejściowy (może to być opis stanowiska, skopiowany dokument, link z treścią lub luźne notatki użytkownika) i stwórz na jego podstawie inteligentne wnioski (conclusions) oraz wyciągnij konkretne suche fakty (faktoring doświadczenia, umiejętności, edukacji), aby rozbudować profil zawodowy.
 
 REGUŁA WYCIĄGANIA WNIOSKÓW (Inteligentna dedukcja):
 - Jeśli użytkownik podaje doświadczenie jako programista/developer, automatycznie wyciągnij wniosek, że posiada wysokie zdolności analityczne, umiejętność rozwiązywania problemów (problem solving) oraz biegłość komputerową (computer literacy).
@@ -231,11 +256,11 @@ REGUŁA WYCIĄGANIA WNIOSKÓW (Inteligentna dedukcja):
 - Dla każdego innego zawodu lub opisu, dokonaj podobnej, logicznej i wartościowej dedukcji dotyczącej ukrytych umiejętności miękkich, twardych lub cech charakteru, które naturalnie wynikają z danej roli.
 
 Oto aktualny profil użytkownika:
-${JSON.stringify(currentProfile, null, 2)}
+${JSON.stringify(resolvedProfile, null, 2)}
 
 Oto nowy tekst/dokument do analizy:
 ---
-${inputText}
+${resolvedText}
 ---
 
 Wygeneruj wnioski i wyekstrahowane fakty w języku polskim.`;
@@ -311,52 +336,71 @@ Wygeneruj wnioski i wyekstrahowane fakty w języku polskim.`;
 app.post("/api/gemini/generate-resume", async (req, res) => {
   try {
     const ai = getGeminiClient();
-    const { profile, conclusions, jobOffer, includePhoto, templateId = "classic" } = req.body;
+    const { profile, conclusions, jobOffer, includePhoto, templateId = "classic", resumeLanguage = "pl" } = req.body;
 
-    let templateInstruction = "Zastosuj styl tradycyjny, konserwatywny, formalny i zrównoważony. Nie używaj żadnych emoji ani emotikonów. Sformatuj sekcje w klasycznej, jednokolumnowej strukturze z wyraźnym podziałem na nagłówki.";
+    const isEnglish = resumeLanguage === "en";
+
+    let templateInstruction = isEnglish
+      ? "Apply a traditional, conservative, formal, and balanced style. Do not use any emojis. Structure sections in a classic single-column layout with distinct headers."
+      : "Zastosuj styl tradycyjny, konserwatywny, formalny i zrównoważony. Nie używaj żadnych emoji ani emotikonów. Sformatuj sekcje w klasycznej, jednokolumnowej strukturze z wyraźnym podziałem na nagłówki.";
+
     if (templateId === "modern") {
-      templateInstruction = "Zastosuj styl nowoczesny i minimalistyczny. Struktura powinna być przestronna, zwięzła i przejrzysta. Skoncentruj się na silnych słowach kluczowych i krótkich, uderzających wypunktowaniach. Używaj oszczędnego formatowania.";
+      templateInstruction = isEnglish
+        ? "Apply a modern, minimalist style. The layout should be spacious, concise, and clean. Focus on strong keywords and short, impactful bullet points. Use restrained formatting."
+        : "Zastosuj styl nowoczesny i minimalistyczny. Struktura powinna być przestronna, zwięzła i przejrzysta. Skoncentruj się na silnych słowach kluczowych i krótkich, uderzających wypunktowaniach. Używaj oszczędnego formatowania.";
     } else if (templateId === "tech") {
-      templateInstruction = `Zastosuj nowoczesny, czysty i profesjonalny styl IT / Inżynieria (Software & DevOps):
+      templateInstruction = isEnglish
+        ? `Apply a modern, clean, and professional engineering style (IT / Software & DevOps):
+- DO NOT use any '//' slashes or pseudo-terminal symbols in headers! Use clean, elegant H2 headers in UPPERCASE, e.g. '## TECHNICAL SKILLS', '## PROFESSIONAL EXPERIENCE', '## ENGINEERING PROJECTS', '## LANGUAGES', '## EDUCATION & CERTIFICATIONS'.
+- Header: Full name as H1, below it the target role (e.g. Senior Frontend Developer / Full Stack Engineer), and contact information in a neat line with separators (email • github • linkedin • phone • city).
+- Group technical skills logically (Programming Languages, Frameworks & Libraries, Databases & Cloud, Tools).
+- Highlight technologies and tools in markdown code tags (e.g. \`React\`, \`TypeScript\`, \`Node.js\`, \`Docker\`, \`PostgreSQL\`, \`AWS\`).
+- Use the engineering impact formula: [Action] + [Technology] + [Measurable result / Impact].`
+        : `Zastosuj nowoczesny, czysty i profesjonalny styl IT / Inżynieria (Software & DevOps):
 - BEZWZGLĘDNIE NIE UŻYWAJ żadnych ukośników '//' ani pseudo-terminalowych ozdobników w nagłówkach! Używaj czystych, eleganckich nagłówków H2 pisanych wielkimi literami, np. '## UMIEJĘTNOŚCI TECHNICZNE', '## DOŚWIADCZENIE ZAWODOWE', '## PROJEKTY INŻYNIERSKIE', '## JĘZYKI OBCE', '## EDUKACJA I CERTYFIKATY'.
 - Nagłówek: Imię i nazwisko jako H1, pod spodem docelowa rola inżynierska (np. Senior Frontend Developer / Full Stack Engineer), a dane kontaktowe w estetycznej linii z separatorami (np. email • github • linkedin • telefon • miasto).
 - W sekcji umiejętności technicznych pogrupuj technologie logicznie (Języki programowania, Frameworki & Biblioteki, Bazy danych & Chmura, Narzędzia).
 - Każdą technologię, bibliotekę, framework, bazę danych i narzędzie oznaczaj w znacznikach kodu markdown (np. \`React\`, \`TypeScript\`, \`Node.js\`, \`Docker\`, \`PostgreSQL\`, \`AWS\`), co utworzy estetyczne tagi.
 - W punktach doświadczenia stosuj inżynierską formułę: [Działanie] + [Użyta technologia] + [Mierzalny rezultat / Wpływ na produkt], np. 'Wdrożono architekturę komponentów w \`React\` i \`TypeScript\`, skracając czas ładowania strony o 35%'.`;
     } else if (templateId === "creative") {
-      templateInstruction = "Zastosuj styl kreatywny i dynamiczny. Możesz użyć nielicznych, nowoczesnych i profesjonalnych ikon/emotikonów jako punktorów przy sekcjach. Wstęp (podsumowanie zawodowe) sformatuj w bardzo chwytliwy i nieszablonowy sposób, aby od razu przykuć uwagę rekrutera.";
+      templateInstruction = isEnglish
+        ? "Apply a creative, dynamic style with an engaging professional summary designed to stand out to hiring managers."
+        : "Zastosuj styl kreatywny i dynamiczny. Możesz użyć nielicznych, nowoczesnych i profesjonalnych ikon/emotikonów jako punktorów przy sekcjach. Wstęp (podsumowanie zawodowe) sformatuj w bardzo chwytliwy i nieszablonowy sposób, aby od razu przykuć uwagę rekrutera.";
     }
 
-    const prompt = `Jako profesjonalny rekruter i copywriter techniczny, stwórz perfekcyjnie dopasowane CV w języku polskim pod podaną ofertę pracy, bazując na profilu użytkownika oraz wygenerowanych wnioskach AI.
+    const languageDirective = isEnglish
+      ? "LANGUAGE DIRECTIVE: Generate the entire resume (headings, descriptions, summary, and tailoring decisions) in ENGLISH."
+      : "DYREKTYWA JĘZYKOWA: Wygeneruj całe CV (nagłówki, opisy, podsumowanie oraz decyzje rekrutacyjne) w JĘZYKU POLSKIM.";
 
-WYMOGI STYLU DOKUMENTU DLA SZABLONU "${templateId}":
+    const prompt = `As an elite technical recruiter and career strategist, create a perfectly tailored resume based on the user's profile and the provided job posting.
+
+${languageDirective}
+
+DOCUMENT STYLE REQUIREMENTS FOR TEMPLATE "${templateId}":
 ${templateInstruction}
 
-ZASADY DOPASOWYWANIA I SELEKCJI (Ważne):
-1. Przeanalizuj ofertę pracy i zidentyfikuj kluczowe wymagania, słowa kluczowe i oczekiwania.
-2. Z profilu użytkownika (i wniosków):
-   - WYRÓŻNIJ (highlight) te umiejętności, doświadczenia i osiągnięcia, które są bezpośrednio przydatne i pożądane w tej ofercie. Dopasuj słownictwo w CV, aby bezpośrednio rezonowało z językiem oferty.
-   - POMIŃ (omit) lub znacznie zminimalizuj sekcje, umiejętności lub szczegóły doświadczenia, które nie mają żadnego znaczenia dla tej konkretnej roli (np. pomiń doświadczenie jako kucharz lub barman, jeśli użytkownik aplikuje na Senior React Developera, chyba że wykazuje to unikalną cechę zarządzania zespołem, którą należy krótko uargumentować).
-3. OPTYMALIZACJA OBJĘTOŚCI POD PEŁNE STRONY A4 (Kluczowe):
-   - Standardem profesjonalnego CV jest zajmowanie DOKŁADNIE JEDNEJ PEŁNEJ STRONY A4 (one-page resume) lub ewentualnie DOKŁADNIE DWÓCH PEŁNYCH STRON przy bardzo rozbudowanym stażu.
-   - Bezwzględnie unikaj sytuacji, w której treść rozlewa się na drugą stronę na zaledwie kilka luźnych zdań!
-   - Skondensuj opisy obowiązków do 3-4 uderzających punktów na stanowisko, kładąc nacisk na konkretne rezultaty i technologie.
-   - Zadbaj o zwartą, pełną objętość dokumentu, aby strona była harmonijnie i estetycznie wypełniona.
-4. Stwórz atrakcyjne, dynamiczne podsumowanie zawodowe (professionalSummary) dostosowane do oferty.
-5. Wygeneruj kompletne CV w formacie Markdown, gotowe do druku lub skopiowania. Powinno być eleganckie, z przejrzystą strukturą nagłówków, wypunktowaniami i profesjonalnym tonem.
-${includePhoto ? "Użytkownik zaznaczył chęć dołączenia zdjęcia profilowego. Zdjęcie zostanie wyrenderowane automatycznie w prawym górnym rogu obok głównych danych. Dostosuj strukturę nagłówka Markdown tak, by ładnie współgrała z obecnością zdjęcia po prawej stronie (unikaj nadmiernych, szerokich linii poziomych w nagłówku kontaktowym)." : "Użytkownik zdecydował o wygenerowaniu wersji CV bez zdjęcia."}
-6. JĘZYKI OBCE (DOKŁADNIE według profilu użytkownika):
-   - Jeśli profil użytkownika zawiera języki obce (w tablicy 'languages' lub 'skills'), ZAWSZE uwzględnij je w dedykowanej sekcji '## Języki obce' (lub '## JĘZYKI OBCE').
-   - Używaj DOKŁADNIE takich poziomów biegłości, jakie użytkownik podał w swoim profilu. Nie zmieniaj, nie zgaduj ani nie wymyślaj poziomów językowych na własną rękę.
-7. Przygotuj listę decyzji rekrutacyjnych (tailoringDecisions) wyjaśniających użytkownikowi, dlaczego podjąłeś konkretne decyzje o wyróżnieniu, zmianie akcentów lub pominięciu danych elementów.
+TAILORING & SELECTION RULES:
+1. Analyze the job posting and identify key requirements, keywords, and expectations.
+2. From the user profile (and deductions):
+   - HIGHLIGHT relevant skills, experiences, and accomplishments that directly match the role.
+   - OMIT or de-emphasize completely irrelevant elements.
+3. PAGE FIT OPTIMIZATION (Crucial):
+   - Aim for EXACTLY ONE FULL A4 PAGE (or two full pages only if the career is extensive).
+   - Condense bullets to 3-4 impactful items per job.
+4. Create an engaging professional summary.
+5. Generate the complete CV in Markdown format.
+${includePhoto ? "User chose to include a profile photo. Ensure markdown layout works harmoniously with a photo in the top right." : "User chose not to include a photo."}
+6. FOREIGN LANGUAGES:
+   - If user has languages, ALWAYS include them in a dedicated '## ${isEnglish ? "LANGUAGES" : "JĘZYKI OBCE"}' section using EXACTLY the proficiency levels specified by the user.
+7. Prepare a list of tailoringDecisions explaining why specific highlights or omissions were made.
 
-Oto profil użytkownika:
+Oto profil użytkownika / User Profile:
 ${JSON.stringify(profile, null, 2)}
 
-Oto wnioski AI dotyczące użytkownika:
+Oto wnioski AI / AI Deductions:
 ${JSON.stringify(conclusions, null, 2)}
 
-Oto treść oferty pracy:
+Oto treść oferty pracy / Job Posting:
 ---
 ${jobOffer}
 ---`;
@@ -527,9 +571,15 @@ Postaraj się zachować jak najwyższy standard i dokładność przy analizie te
 
 // Konfiguracja Vite i serwowanie statycznych plików
 async function startServer() {
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== "production") {
+    const isHmrDisabled = process.env.DISABLE_HMR === "true";
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : { server: httpServer },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -541,7 +591,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Serwer uruchomiony na porcie ${PORT}`);
   });
 }

@@ -5,13 +5,14 @@ import html2canvas from "html2canvas-pro";
 import { TailoredResume, UserProfile } from "../types";
 import { 
   Sparkles, FileText, ChevronRight, Copy, Printer, Check, Info, 
-  Briefcase, Award, CheckCircle2, ShieldAlert, Zap, Layers, Download, Sliders,
-  Edit3, Eye, Undo2, Bold, List, Code, Heading2
+  Briefcase, Award, CheckCircle2, Sliders,
+  Edit3, Eye, Undo2, Bold, List, Code, Heading2, Download, Globe2
 } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   profile: UserProfile;
-  onGenerate: (jobOffer: string, includePhoto: boolean, templateId: string) => Promise<void>;
+  onGenerate: (jobOffer: string, includePhoto: boolean, templateId: string, resumeLanguage?: string) => Promise<void>;
   tailoredResume: TailoredResume | null;
   isGenerating: boolean;
 }
@@ -26,42 +27,50 @@ export interface ResumeTemplate {
   promptInstruction: string;
 }
 
-export const RESUME_TEMPLATES: ResumeTemplate[] = [
+export const getTemplates = (lang: "pl" | "en"): ResumeTemplate[] => [
   {
     id: "classic",
-    name: "Klasyczny Biznesowy",
-    description: "Tradycyjny, formalny i zrównoważony układ. Idealny do bankowości, korporacji, prawa i ról menedżerskich.",
-    badge: "Formalny",
+    name: lang === "en" ? "Classic Business" : "Klasyczny Biznesowy",
+    description: lang === "en"
+      ? "Traditional, formal, and balanced layout. Ideal for banking, corporate, legal, and managerial roles."
+      : "Tradycyjny, formalny i zrównoważony układ. Idealny do bankowości, korporacji, prawa i ról menedżerskich.",
+    badge: lang === "en" ? "Formal" : "Formalny",
     iconColor: "text-blue-600 bg-blue-50 border-blue-100",
     styleClass: "prose-classic font-serif text-slate-900 bg-white max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-slate-900 [&_h1]:border-b-2 [&_h1]:border-slate-800 [&_h1]:pb-1 [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-slate-800 [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:border-b [&_h2]:border-slate-200 [&_h2]:pb-0.5 [&_p]:text-xs [&_p]:leading-relaxed [&_li]:text-xs [&_li]:leading-relaxed [&_hr]:my-4 [&_hr]:border-slate-300",
-    promptInstruction: "Zastosuj styl tradycyjny, konserwatywny i profesjonalny. Nagłówki powinny być czyste i stonowane. Nie używaj żadnych emoji ani emotikonów. Sformatuj sekcje w klasycznej, jednokolumnowej strukturze z wyraźnym podziałem na nagłówki."
+    promptInstruction: "Zastosuj styl tradycyjny, konserwatywny i profesjonalny."
   },
   {
     id: "modern",
-    name: "Nowoczesny Minimalistyczny",
-    description: "Lekki, przestrzenny układ z subtelnymi detalami. Doskonały dla branży kreatywnej, marketingu, HR i startupów.",
+    name: lang === "en" ? "Modern Minimalist" : "Nowoczesny Minimalistyczny",
+    description: lang === "en"
+      ? "Light, spacious layout with subtle details. Excellent for creative industries, marketing, HR, and startups."
+      : "Lekki, przestrzenny układ z subtelnymi detalami. Doskonały dla branży kreatywnej, marketingu, HR i startupów.",
     badge: "SaaS / Startup",
     iconColor: "text-indigo-600 bg-indigo-50 border-indigo-100",
     styleClass: "prose-modern font-sans text-slate-800 bg-white max-w-none [&_h1]:text-2xl [&_h1]:font-extrabold [&_h1]:tracking-tight [&_h1]:text-indigo-950 [&_h1]:mb-3 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wider [&_h2]:text-indigo-600 [&_h2]:border-b [&_h2]:border-slate-100 [&_h2]:pb-1 [&_h2]:mt-5 [&_h2]:mb-2 [&_p]:text-xs [&_p]:text-slate-600 [&_li]:text-xs [&_li]:text-slate-600 [&_hr]:hidden",
-    promptInstruction: "Zastosuj styl nowoczesny i minimalistyczny. Struktura powinna być przestronna, zwięzła i przejrzysta. Skoncentruj się na silnych słowach kluczowych i krótkich, uderzających wypunktowaniach. Używaj oszczędnego formatowania."
+    promptInstruction: "Zastosuj styl nowoczesny i minimalistyczny."
   },
   {
     id: "tech",
-    name: "IT / Inżynieria (Software & DevOps)",
-    description: "Nowoczesny, architektoniczny układ inżynieryjny z czytelną architekturą treści, tagami technologii i precyzyjną typografią.",
-    badge: "IT / Inżynieria",
+    name: lang === "en" ? "IT / Engineering (Software & DevOps)" : "IT / Inżynieria (Software & DevOps)",
+    description: lang === "en"
+      ? "Modern architectural engineering layout with clean content hierarchy, tech tags, and precise typography."
+      : "Nowoczesny, architektoniczny układ inżynieryjny z czytelną architekturą treści, tagami technologii i precyzyjną typografią.",
+    badge: lang === "en" ? "IT / Engineering" : "IT / Inżynieria",
     iconColor: "text-sky-600 bg-sky-50 border-sky-200",
     styleClass: "prose-tech max-w-none",
-    promptInstruction: "Zastosuj nowoczesny, czysty styl IT / Inżynieria (Software & DevOps). Nagłówki H2 sformatuj w stylu technicznym bez żadnych znaków '//' (np. '## UMIEJĘTNOŚCI TECHNICZNE', '## DOŚWIADCZENIE ZAWODOWE', '## JĘZYKI OBCE', '## EDUKACJA I CERTYFIKATY'). Wyróżniaj technologie, języki programowania i narzędzia znacznikami kodu markdown (np. `React`, `TypeScript`, `Docker`, `PostgreSQL`, `AWS`). Zapewnij dedykowaną sekcję na języki obce."
+    promptInstruction: "Zastosuj nowoczesny, czysty styl IT / Inżynieria (Software & DevOps) bez znaków '//'."
   },
   {
     id: "creative",
-    name: "Kreatywny z Akcentem",
-    description: "Wyróżniający się układ z lewym paskiem akcentującym i energetycznymi akcentami kolorystycznymi.",
-    badge: "UX / Kreatywny",
+    name: lang === "en" ? "Creative with Accent" : "Kreatywny z Akcentem",
+    description: lang === "en"
+      ? "Distinctive layout with energetic left accent bar and bold visual hierarchy."
+      : "Wyróżniający się układ z lewym paskiem akcentującym i energetycznymi akcentami kolorystycznymi.",
+    badge: lang === "en" ? "UX / Creative" : "UX / Kreatywny",
     iconColor: "text-emerald-600 bg-emerald-50 border-emerald-100",
     styleClass: "prose-creative font-sans text-slate-800 bg-white max-w-none border-l-4 border-emerald-500 pl-6 [&_h1]:text-2xl [&_h1]:font-black [&_h1]:text-emerald-950 [&_h1]:mb-3 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:text-emerald-700 [&_h2]:bg-emerald-50/70 [&_h2]:px-2 [&_h2]:py-0.5 [&_h2]:rounded [&_h2]:inline-block [&_h2]:mt-4 [&_h2]:mb-2 [&_p]:text-xs [&_li]:text-xs [&_hr]:my-3 [&_hr]:border-emerald-100",
-    promptInstruction: "Zastosuj styl kreatywny i dynamiczny. Możesz użyć nielicznych, nowoczesnych i profesjonalnych ikon/emotikonów jako punktorów przy sekcjach. Wstęp sformatuj w bardzo chwytliwy i angażujący sposób, aby od razu przykuć uwagę rekrutera."
+    promptInstruction: "Zastosuj styl kreatywny i dynamiczny."
   }
 ];
 
@@ -71,6 +80,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
   tailoredResume,
   isGenerating
 }) => {
+  const { t, language, interpolate } = useLanguage();
   const [jobOffer, setJobOffer] = useState("");
   const [copied, setCopied] = useState(false);
   const [includePhoto, setIncludePhoto] = useState(true);
@@ -82,8 +92,17 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
   const [measuredPages, setMeasuredPages] = useState<number>(1);
   const [editedMarkdown, setEditedMarkdown] = useState<string>("");
   const [activeTabMode, setActiveTabMode] = useState<"preview" | "edit">("preview");
+  const [targetResumeLang, setTargetResumeLang] = useState<"pl" | "en">(language);
   const resumePrintRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync target language if UI language changes initially
+  useEffect(() => {
+    setTargetResumeLang(language);
+  }, [language]);
+
+  const templates = getTemplates(language);
+  const activeTemplate = templates.find(tpl => tpl.id === selectedTemplateId) || templates[0];
 
   // Synchronizacja edytowanego tekstu z nowo wygenerowanym CV
   useEffect(() => {
@@ -100,11 +119,6 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
     const charLen = currentMarkdown.length;
 
     if (densityMode === "auto") {
-      // Automatyczny dobór czcionki i marginesów:
-      // Jeśli CV jest długie (>1250 znaków), zmniejszamy czcionkę na ultracompact, by zmieścić na 1 stronie.
-      // Jeśli standardowe (650-1250), używamy compact.
-      // Jeśli bardzo krótkie (<650), używamy spacious, by ładnie wypełnić całą stronę.
-      // Jeśli bardzo obszerne (>2000), standard na 2 pełne strony.
       if (charLen > 2000) {
         setEffectiveDensity("");
       } else if (charLen > 1250) {
@@ -131,7 +145,6 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const height = entry.contentRect.height;
-        // W proporcjach A4 (~794px szerokości), 1 strona A4 to ok. 1060px wysokości użytkowej
         const pages = Math.max(1, Math.ceil(height / 1060));
         setMeasuredPages(pages);
       }
@@ -203,8 +216,6 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
             el.style.width = "794px";
             el.style.maxWidth = "794px";
 
-            // Jeśli tryb Auto lub Kompaktowy i dokument minimalnie wykracza ponad 1 stronę A4,
-            // automatycznie dociśnij czcionkę, aby wymusić zmieszczenie na dokładnie 1 stronie PDF
             if ((densityMode === "auto" || densityMode === "compact") && el.offsetHeight > 1050 && el.offsetHeight < 1400) {
               const mb = el.querySelector(".markdown-body");
               if (mb) {
@@ -234,7 +245,6 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
       heightLeft -= pageHeight;
 
-      // Dodaj kolejną stronę tylko jeśli pozostała treść ma więcej niż 12mm (ochrona przed samotnymi linijkami)
       while (heightLeft > 12) {
         position -= pageHeight;
         pdf.addPage();
@@ -243,21 +253,21 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
       }
 
       const rawName = profile?.personal?.name || "kandydat";
-      const cleanName = rawName.trim().replace(/\s+/g, "_") || "kandydat";
-      const filename = `CV_${cleanName}_dopasowane.pdf`;
+      const cleanName = rawName.trim().replace(/\s+/g, "_") || "resume";
+      const filename = `CV_${cleanName}_tailored.pdf`;
       pdf.save(filename);
 
       setPdfDownloaded(true);
       setTimeout(() => setPdfDownloaded(false), 2500);
     } catch (err: any) {
-      // W razie problemu z renderowaniem canvas, wywołaj bezpośredni wydruk systemowy
       window.print();
     } finally {
       setIsExportingPdf(false);
     }
   };
 
-  const activeTemplate = RESUME_TEMPLATES.find(t => t.id === selectedTemplateId) || RESUME_TEMPLATES[0];
+  const wordCount = currentMarkdown.trim().split(/\s+/).filter(Boolean).length;
+  const charCount = currentMarkdown.length;
 
   return (
     <div className="space-y-6">
@@ -269,20 +279,46 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-800 font-display">Dopasuj CV pod Ofertę Pracy</h2>
-              <p className="text-xs text-slate-400">Wklej ofertę, wybierz szablon wizualny i pozwól Gemini zoptymalizować dokument</p>
+              <h2 className="text-lg font-semibold text-slate-800 font-display">{t.tailorTitle}</h2>
+              <p className="text-xs text-slate-400">{t.tailorSubtitle}</p>
+            </div>
+          </div>
+
+          {/* Szybki wybór języka generowanego CV */}
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+            <Globe2 className="w-4 h-4 text-slate-500" />
+            <span className="font-semibold text-slate-600 text-[11px] hidden sm:inline">{t.resumeLangBadge}</span>
+            <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setTargetResumeLang("pl")}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                  targetResumeLang === "pl" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                🇵🇱 PL
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetResumeLang("en")}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                  targetResumeLang === "en" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                🇬🇧 EN
+              </button>
             </div>
           </div>
         </div>
 
         {/* Textarea dla Oferty Pracy */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500">Treść oferty pracy (wymagania, opis roli)</label>
+          <label className="text-xs font-semibold text-slate-500">{t.jobOfferLabel}</label>
           <textarea
             value={jobOffer}
             onChange={(e) => setJobOffer(e.target.value)}
             rows={4}
-            placeholder="Wklej treść oferty pracy lub ogłoszenia rekrutacyjnego..."
+            placeholder={t.jobOfferPlaceholder}
             className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
           />
         </div>
@@ -291,15 +327,15 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-blue-600 animate-pulse" /> Galeria Szablonów Dokumentu:
+              <Sparkles className="w-4 h-4 text-blue-600" /> {t.templateStyleLabel}
             </label>
             <span className="text-[10px] text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full font-bold">
-              Aktywny: {activeTemplate.name}
+              {activeTemplate.name}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {RESUME_TEMPLATES.map((tpl) => {
+            {templates.map((tpl) => {
               const isSelected = selectedTemplateId === tpl.id;
               return (
                 <div
@@ -311,7 +347,6 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                       : "border-slate-150 bg-white hover:border-slate-300 hover:bg-slate-50/50"
                   }`}
                 >
-                  {/* Ptaszek zaznaczenia */}
                   {isSelected && (
                     <div className="absolute top-2.5 right-2.5 text-blue-600">
                       <CheckCircle2 className="w-5 h-5 fill-blue-50" />
@@ -329,7 +364,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   </div>
 
                   <div className="text-[10px] font-semibold text-blue-600 flex items-center gap-1">
-                    <span>Zastosuj ten styl</span>
+                    <span>{t.applyThisStyle}</span>
                     <ChevronRight className="w-3 h-3" />
                   </div>
                 </div>
@@ -349,11 +384,11 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
               className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded-sm focus:ring-blue-500 cursor-pointer"
             />
             <label htmlFor="includePhotoCheckbox" className="text-xs text-slate-700 font-medium cursor-pointer select-none">
-              Dołącz zdjęcie profilowe do wygenerowanego CV
+              {t.includePhotoLabel}
               <span className="block text-[10px] text-slate-400 font-normal">
                 {profile.personal.photo
-                  ? "✓ Masz już wgrane zdjęcie profilowe w swoim profilu."
-                  : "⚠ Uwaga: Aby zdjęcie się pojawiło, wgraj je najpierw w sekcji \"1. Twój Profil Kariery\"."}
+                  ? t.photoUploadedHint
+                  : t.photoMissingHint}
               </span>
             </label>
           </div>
@@ -361,18 +396,18 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
 
         <div className="flex justify-end">
           <button
-            onClick={() => onGenerate(jobOffer, includePhoto, selectedTemplateId)}
+            onClick={() => onGenerate(jobOffer, includePhoto, selectedTemplateId, targetResumeLang)}
             disabled={isGenerating || !jobOffer.trim()}
             className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
           >
             {isGenerating ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Optymalizowanie Twojego CV ({activeTemplate.name})...
+                {interpolate(t.optimizingResume, { tpl: activeTemplate.name })}
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 animate-bounce" /> Generuj Dopasowane CV przez AI
+                <Sparkles className="w-4 h-4 animate-bounce" /> {t.generateWithAiBtn} ({targetResumeLang.toUpperCase()})
               </>
             )}
           </button>
@@ -386,10 +421,10 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
           <div className="space-y-6 no-print lg:col-span-1">
             <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
               <h3 className="text-sm font-semibold text-slate-800 font-display flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-blue-500" /> Logika i Decyzje AI
+                <Info className="w-4 h-4 text-blue-500" /> {t.aiDecisionsTitle}
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Oto wyjaśnienie, które sekcje Twojego profilu zostały wyeksponowane, a które wyciszone ze względu na dopasowanie (ATS):
+                {t.aiDecisionsDesc}
               </p>
 
               <div className="space-y-3">
@@ -399,9 +434,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                       <span className="text-xs font-bold text-slate-700 truncate max-w-[150px]">{decision.itemName}</span>
                       <span
                         className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase border ${
-                          decision.action.includes("Wyróżniono")
+                          decision.action.includes("Wyróżniono") || decision.action.toLowerCase().includes("highlight")
                             ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                            : decision.action.includes("Pominięto")
+                            : decision.action.includes("Pominięto") || decision.action.toLowerCase().includes("omit")
                             ? "bg-rose-50 border-rose-100 text-rose-600"
                             : "bg-amber-50 border-amber-100 text-amber-700"
                         }`}
@@ -417,7 +452,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
 
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> Podsumowanie zawodowe (Dopasowane)
+                <FileText className="w-3.5 h-3.5" /> {t.tailoredSummaryTitle}
               </h4>
               <p className="text-xs text-slate-600 leading-relaxed italic">
                 "{tailoredResume.professionalSummary}"
@@ -429,14 +464,14 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
           <div className="lg:col-span-2 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between no-print bg-white rounded-xl border border-slate-100 p-4 gap-3">
               <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-600 block">Podgląd gotowego dokumentu</span>
-                <span className="text-[10px] text-slate-400 font-medium">Przełączaj szablon poniżej, aby zmienić styl w locie!</span>
+                <span className="text-xs font-bold text-slate-600 block">{t.readyDocPreview}</span>
+                <span className="text-[10px] text-slate-400 font-medium">{t.switchTemplateFly}</span>
               </div>
               
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Selektor szablonu w locie */}
                 <div className="flex items-center bg-slate-50 border border-slate-200 p-0.5 rounded-lg">
-                  {RESUME_TEMPLATES.map((tpl) => (
+                  {templates.map((tpl) => (
                     <button
                       key={tpl.id}
                       onClick={() => setSelectedTemplateId(tpl.id)}
@@ -460,7 +495,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   title="Skopiuj kod Markdown"
                 >
                   {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "Skopiowano!" : "Kopiuj"}
+                  {copied ? t.copiedBtn : t.copyBtn}
                 </button>
 
                 <button
@@ -472,17 +507,17 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   {isExportingPdf ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Tworzenie PDF...</span>
+                      <span>{t.creatingPdf}</span>
                     </>
                   ) : pdfDownloaded ? (
                     <>
                       <Check className="w-4 h-4 text-emerald-300" />
-                      <span>Pobrano PDF!</span>
+                      <span>{t.downloadedPdf}</span>
                     </>
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      <span>Drukuj / PDF</span>
+                      <span>{t.downloadPdfBtn}</span>
                     </>
                   )}
                 </button>
@@ -493,7 +528,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   title="Wydrukuj bezpośrednio przez okno drukarki"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Drukarka</span>
+                  <span>{t.printerBtn}</span>
                 </button>
               </div>
             </div>
@@ -503,7 +538,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-700 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-blue-600" />
-                  Format A4:
+                  {t.a4Format}
                 </span>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                   measuredPages === 1 
@@ -511,11 +546,11 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                     : "bg-blue-100/80 text-blue-800 border border-blue-300/60"
                 }`}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {measuredPages === 1 ? "Idealnie 1 pełna strona A4" : `Pełne ${measuredPages} strony A4`}
+                  {measuredPages === 1 ? t.a4SinglePage : interpolate(t.a4MultiPage, { n: measuredPages })}
                 </span>
                 {densityMode === "auto" && (
                   <span className="text-[10px] text-slate-500 hidden sm:inline-block">
-                    (Auto-skalowanie aktywne)
+                    {t.autoScalingActive}
                   </span>
                 )}
               </div>
@@ -523,7 +558,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-slate-500 text-[11px] font-medium mr-1 flex items-center gap-1">
                   <Sliders className="w-3 h-3 text-slate-400" />
-                  Rozmiar tekstu:
+                  {t.textSizeLabel}
                 </span>
                 <div className="inline-flex bg-white border border-slate-200 p-0.5 rounded-lg shadow-2xs">
                   <button
@@ -533,9 +568,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
-                    title="Automatycznie dopasowuje czcionkę, by zmieścić CV na 1 stronie"
+                    title="Auto"
                   >
-                    ⚡ Auto (1 str.)
+                    {t.densityAuto}
                   </button>
                   <button
                     onClick={() => setDensityMode("compact")}
@@ -544,9 +579,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
-                    title="Mniejsza czcionka i zwięzłe odstępy"
+                    title={t.densityCompact}
                   >
-                    Kompaktowa
+                    {t.densityCompact}
                   </button>
                   <button
                     onClick={() => setDensityMode("ultracompact")}
@@ -555,9 +590,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
-                    title="Ultra-zwarta czcionka dla długiego CV"
+                    title={t.densityUltra}
                   >
-                    Ultra-zwarta
+                    {t.densityUltra}
                   </button>
                   <button
                     onClick={() => setDensityMode("standard")}
@@ -566,9 +601,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
-                    title="Standardowa wielkość tekstu"
+                    title={t.densityStandard}
                   >
-                    Standard
+                    {t.densityStandard}
                   </button>
                   <button
                     onClick={() => setDensityMode("spacious")}
@@ -577,9 +612,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
-                    title="Powiększona czcionka, by krótkie CV wypełniło całą stronę"
+                    title={t.densitySpacious}
                   >
-                    Powiększona
+                    {t.densitySpacious}
                   </button>
                 </div>
               </div>
@@ -598,7 +633,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Podgląd dokumentu</span>
+                  <span>{t.previewDocTab}</span>
                 </button>
                 <button
                   type="button"
@@ -610,7 +645,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   }`}
                 >
                   <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Edytuj treść (Markdown)</span>
+                  <span>{t.editMarkdownTab}</span>
                 </button>
               </div>
 
@@ -621,7 +656,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer hover:underline"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Chcesz nanieść poprawki? Edytuj tekst</span>
+                  <span>{t.wantToEditNotice}</span>
                 </button>
               )}
             </div>
@@ -635,23 +670,23 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                       <Edit3 className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-800">Edytor treści CV przed eksportem do PDF</h3>
-                      <p className="text-[11px] text-slate-400">Możesz bezpośrednio zmodyfikować dowolne zdanie, sekcje lub dane przed wydrukiem lub pobraniem.</p>
+                      <h3 className="text-sm font-bold text-slate-800">{t.editorHeading}</h3>
+                      <p className="text-[11px] text-slate-400">{t.editorSub}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm("Czy chcesz przywrócić oryginalną treść wygenerowaną przez AI? Twoje ręczne edycje zostaną cofnięte.")) {
+                        if (confirm(t.confirmRestoreAi)) {
                           setEditedMarkdown(tailoredResume.tailoredResumeMarkdown);
                         }
                       }}
                       className="px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                      title="Cofnij do pierwotnej wersji wygenerowanej przez AI"
+                      title={t.restoreAiVersion}
                     >
                       <Undo2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Przywróć wersję AI</span>
+                      <span>{t.restoreAiVersion}</span>
                     </button>
                     <button
                       type="button"
@@ -659,48 +694,48 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                       className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Zobacz podgląd</span>
+                      <span>{t.viewPreviewBtn}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Narzędzia formatowania */}
                 <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Formatuj:</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">{t.formatToolbar}</span>
                   <button
                     type="button"
-                    onClick={() => insertFormatting("**", "**", "pogrubiony tekst")}
+                    onClick={() => insertFormatting("**", "**", language === "en" ? "bold text" : "pogrubiony tekst")}
                     className="p-1 px-2 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 text-xs font-bold cursor-pointer"
-                    title="Pogrubienie (**tekst**)"
+                    title="Bold (**text**)"
                   >
                     <Bold className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertFormatting("## ", "", "NAZWA SEKCJI")}
+                    onClick={() => insertFormatting("## ", "", language === "en" ? "SECTION TITLE" : "NAZWA SEKCJI")}
                     className="p-1 px-2 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 text-xs font-bold cursor-pointer flex items-center gap-1"
-                    title="Nagłówek sekcji (## Tytuł)"
+                    title="Heading (## Title)"
                   >
                     <Heading2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertFormatting("- ", "", "Punkt listy")}
+                    onClick={() => insertFormatting("- ", "", language === "en" ? "Bullet item" : "Punkt listy")}
                     className="p-1 px-2 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 text-xs font-bold cursor-pointer flex items-center gap-1"
-                    title="Punkt listy (- treść)"
+                    title="List item (- text)"
                   >
                     <List className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertFormatting("`", "`", "technologia")}
+                    onClick={() => insertFormatting("`", "`", language === "en" ? "technology" : "technologia")}
                     className="p-1 px-2 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 text-xs font-bold cursor-pointer flex items-center gap-1"
-                    title="Tag technologii (`kod`)"
+                    title="Tech tag (`code`)"
                   >
                     <Code className="w-3.5 h-3.5" />
                   </button>
                   <div className="ml-auto text-[11px] text-slate-400">
-                    {currentMarkdown.length} znaków • {currentMarkdown.trim().split(/\s+/).filter(Boolean).length} słów
+                    {interpolate(t.charsAndWords, { chars: charCount, words: wordCount })}
                   </div>
                 </div>
 
@@ -710,17 +745,17 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   onChange={(e) => setEditedMarkdown(e.target.value)}
                   rows={20}
                   className="w-full font-mono text-xs leading-relaxed p-4 rounded-xl border border-slate-200 bg-slate-50/40 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y"
-                  placeholder="Treść Twojego CV w formacie Markdown..."
+                  placeholder="Markdown content..."
                 />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 pt-1 gap-2">
-                  <span>💡 Wszelkie zmiany zostaną natychmiast uwzględnione w podglądzie i wygenerowanym pliku PDF.</span>
+                  <span>{t.editorHint}</span>
                   <button
                     type="button"
                     onClick={() => setActiveTabMode("preview")}
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs shrink-0"
                   >
                     <Check className="w-4 h-4" />
-                    <span>Zatwierdź i przejdź do druku / PDF</span>
+                    <span>{t.applyAndPrintBtn}</span>
                   </button>
                 </div>
               </div>
@@ -738,7 +773,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                 <div className="float-right ml-6 mb-4 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
                   <img
                     src={profile.personal.photo}
-                    alt="Zdjęcie profilowe"
+                    alt="Profile"
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
@@ -749,15 +784,14 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                 <ReactMarkdown>{currentMarkdown}</ReactMarkdown>
               </div>
 
-              {/* Informacja jeśli profil wykracza poza 1 stronę z szybkim przyciskiem zwężenia */}
               {measuredPages > 1 && (
                 <div className="mt-8 pt-4 border-t-2 border-dashed border-amber-300 no-print flex flex-col sm:flex-row sm:items-center justify-between text-[11px] font-semibold text-amber-800 bg-amber-50/70 p-3 rounded-lg gap-2">
-                  <span>⚠️ Dokument wykracza na stronę 2 A4. Włącz tryb „Ultra-zwarta”, aby zmieścić całość na 1 stronie.</span>
+                  <span>{t.pageOverflowWarn}</span>
                   <button
                     onClick={() => setDensityMode("ultracompact")}
                     className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded font-bold transition-colors cursor-pointer shrink-0"
                   >
-                    Zmniejsz czcionkę do 1 strony &rarr;
+                    {t.shrinkToOnePageBtn}
                   </button>
                 </div>
               )}
@@ -772,9 +806,9 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
         <div className="py-16 text-center space-y-4 bg-white rounded-2xl border border-slate-50 no-print">
           <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin mx-auto" />
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-800">Gemini modeluje Twoje CV</h3>
+            <h3 className="text-sm font-semibold text-slate-800">{t.geminiModeling}</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Analizuję wymagania oferty i optymalizuję pod nie doświadczenie i umiejętności w stylu <strong className="text-blue-600">{activeTemplate.name}</strong>.
+              {t.geminiModelingDesc} <strong className="text-blue-600">{activeTemplate.name}</strong>.
             </p>
           </div>
         </div>
@@ -782,4 +816,3 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
     </div>
   );
 };
-

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { AIConsensus, AIQuestion, Skill } from "../types";
-import { Sparkles, HelpCircle, CheckCircle, Plus, Trash2, HelpCircle as HelpIcon, ArrowRight, Lightbulb } from "lucide-react";
+import { AIConsensus, AIQuestion } from "../types";
+import { Sparkles, HelpCircle, ArrowRight, Lightbulb, Plus, Trash2 } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   questions: AIQuestion[];
@@ -21,13 +22,14 @@ export const AIAdvisor: React.FC<Props> = ({
   onRefreshQuestions,
   onDeleteConclusion
 }) => {
+  const { t, language } = useLanguage();
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [answeringId, setAnsweringId] = useState<string | null>(null);
 
   const handleAnswerSubmit = async (q: AIQuestion) => {
     const text = answers[q.id];
     if (!text || !text.trim()) {
-      alert("Proszę wpisać treść odpowiedzi przed wysłaniem.");
+      alert(t.answerRequiredAlert);
       return;
     }
     setAnsweringId(q.id);
@@ -40,19 +42,20 @@ export const AIAdvisor: React.FC<Props> = ({
   };
 
   const getConclusionBadgeStyle = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "umiejętność twarda":
-        return "bg-blue-50 border-blue-100 text-blue-700";
-      case "umiejętność miękka":
-        return "bg-emerald-50 border-emerald-100 text-emerald-700";
-      case "cecha":
-      case "cecha charakteru":
-        return "bg-purple-50 border-purple-100 text-purple-700";
-      case "wiedza dziedzinowa":
-        return "bg-amber-50 border-amber-100 text-amber-700";
-      default:
-        return "bg-slate-50 border-slate-100 text-slate-700";
+    const typeLower = type.toLowerCase();
+    if (typeLower.includes("twarda") || typeLower.includes("hard")) {
+      return "bg-blue-50 border-blue-100 text-blue-700";
     }
+    if (typeLower.includes("miękka") || typeLower.includes("soft")) {
+      return "bg-emerald-50 border-emerald-100 text-emerald-700";
+    }
+    if (typeLower.includes("cecha") || typeLower.includes("trait")) {
+      return "bg-purple-50 border-purple-100 text-purple-700";
+    }
+    if (typeLower.includes("wiedza") || typeLower.includes("knowledge") || typeLower.includes("branż")) {
+      return "bg-amber-50 border-amber-100 text-amber-700";
+    }
+    return "bg-slate-50 border-slate-100 text-slate-700";
   };
 
   return (
@@ -65,8 +68,8 @@ export const AIAdvisor: React.FC<Props> = ({
               <HelpCircle className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold font-display">Inteligentny Doradca AI</h2>
-              <p className="text-xs text-slate-300">Wskazówki i pytania dopasowane do Twojego profilu</p>
+              <h2 className="text-lg font-semibold font-display">{t.advisorHeaderTitle}</h2>
+              <p className="text-xs text-slate-300">{t.advisorHeaderSub}</p>
             </div>
           </div>
           <button
@@ -74,18 +77,18 @@ export const AIAdvisor: React.FC<Props> = ({
             disabled={isLoadingQuestions}
             className="text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors font-medium cursor-pointer disabled:opacity-50"
           >
-            {isLoadingQuestions ? "Generowanie..." : "Odśwież wskazówki"}
+            {isLoadingQuestions ? t.refreshingTips : t.refreshTipsBtn}
           </button>
         </div>
 
         {isLoadingQuestions ? (
           <div className="py-8 flex flex-col items-center justify-center space-y-3">
             <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-400 rounded-full animate-spin" />
-            <p className="text-xs text-slate-300">Analizuję Twój profil i dobieram najcenniejsze pytania...</p>
+            <p className="text-xs text-slate-300">{t.analyzingProfileQuestions}</p>
           </div>
         ) : questions.length === 0 ? (
           <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-center space-y-2">
-            <p className="text-xs text-slate-300">Twój profil wygląda solidnie! Kliknij 'Odśwież wskazówki', aby wygenerować nowe zapytania.</p>
+            <p className="text-xs text-slate-300">{t.solidProfile}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -100,7 +103,7 @@ export const AIAdvisor: React.FC<Props> = ({
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] uppercase tracking-wider text-blue-400 font-bold font-mono">
-                      Sekcja: {q.field}
+                      {t.sectionLabel} {q.field}
                     </span>
                     <h3 className="text-xs font-semibold text-white leading-relaxed">{q.question}</h3>
                     <p className="text-[10px] text-slate-300 leading-normal flex items-start gap-1">
@@ -113,7 +116,7 @@ export const AIAdvisor: React.FC<Props> = ({
                 <div className="pt-2 flex gap-2">
                   <input
                     type="text"
-                    placeholder="Wpisz swoją odpowiedź..."
+                    placeholder={t.answerInputPlaceholder}
                     value={answers[q.id] || ""}
                     onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
                     onKeyDown={(e) => {
@@ -131,7 +134,7 @@ export const AIAdvisor: React.FC<Props> = ({
                       <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        Wyślij <ArrowRight className="w-3 h-3" />
+                        {t.sendAnswerBtn} <ArrowRight className="w-3 h-3" />
                       </>
                     )}
                   </button>
@@ -150,17 +153,17 @@ export const AIAdvisor: React.FC<Props> = ({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-800 font-display flex items-center gap-1.5">
-              Wnioski i Ukryte Kompetencje
+              {t.conclusionsHeaderTitle}
             </h2>
             <p className="text-xs text-slate-400">
-              Wnioski wydedukowane automatycznie przez AI z Twoich doświadczeń i notatek
+              {t.conclusionsHeaderSub}
             </p>
           </div>
         </div>
 
         {conclusions.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-xs">
-            Nie wyciągnięto jeszcze żadnych wniosków. Dodaj swoje doświadczenia lub notatki/dokumenty w poprzednich zakładkach, aby AI mogło automatycznie wydedukować ukryte umiejętności!
+            {t.noConclusions}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -175,8 +178,8 @@ export const AIAdvisor: React.FC<Props> = ({
                       {c.type}
                     </span>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-400">Pewność:</span>
-                      <span className={`text-[10px] font-bold uppercase ${c.confidence === "wysoki" ? "text-emerald-600" : "text-amber-600"}`}>
+                      <span className="text-[10px] text-slate-400">{t.confidenceLabel}</span>
+                      <span className={`text-[10px] font-bold uppercase ${c.confidence === "wysoki" || c.confidence === "high" ? "text-emerald-600" : "text-amber-600"}`}>
                         {c.confidence}
                       </span>
                     </div>
@@ -188,22 +191,26 @@ export const AIAdvisor: React.FC<Props> = ({
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                   <button
                     onClick={() => {
-                      // Automatycznie zmapuj typ wniosku na poprawną kategorię umiejętności
-                      let cat = "Umiejętności techniczne";
-                      if (c.type.includes("miękka")) cat = "Umiejętności miękkie";
-                      else if (c.type.includes("dziedzinowa") || c.type.includes("branżowa")) cat = "Inne";
-                      else if (c.type.includes("narzędzie")) cat = "Narzędzia i oprogramowanie";
+                      let cat = language === "en" ? "Technical Skills" : "Umiejętności techniczne";
+                      const tLower = c.type.toLowerCase();
+                      if (tLower.includes("miękka") || tLower.includes("soft")) {
+                        cat = language === "en" ? "Soft Skills" : "Umiejętności miękkie";
+                      } else if (tLower.includes("dziedzinowa") || tLower.includes("branżowa") || tLower.includes("knowledge")) {
+                        cat = language === "en" ? "Other" : "Inne";
+                      } else if (tLower.includes("narzędzie") || tLower.includes("tool")) {
+                        cat = language === "en" ? "Tools & Software" : "Narzędzia i oprogramowanie";
+                      }
                       
                       onAddSkill(c.title, cat);
                     }}
                     className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50/50 hover:bg-blue-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Dodaj do mojego CV
+                    <Plus className="w-3.5 h-3.5" /> {t.addToMyCvBtn}
                   </button>
                   <button
                     onClick={() => onDeleteConclusion(idx)}
-                    className="p-1 text-slate-300 hover:text-red-500 rounded-md transition-colors"
-                    title="Odrzuć wniosek"
+                    className="p-1 text-slate-300 hover:text-red-500 rounded-md transition-colors cursor-pointer"
+                    title={t.rejectConclusionTooltip}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

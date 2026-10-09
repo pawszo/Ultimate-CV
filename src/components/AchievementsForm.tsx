@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Achievement } from "../types";
 import { Trophy, Plus, Trash2, Calendar, Award } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   data: Achievement[];
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
 
   const [newAch, setNewAch] = useState<Omit<Achievement, "id">>({
@@ -18,7 +20,7 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
 
   const handleAdd = () => {
     if (!newAch.title) {
-      alert("Tytuł osiągnięcia jest wymagany.");
+      alert(t.achTitleRequired);
       return;
     }
     const created: Achievement = {
@@ -46,26 +48,26 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
             <Trophy className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 font-display">Osiągnięcia i Certyfikaty</h2>
-            <p className="text-xs text-slate-400">Twoje sukcesy, nagrody, kursy i certyfikaty</p>
+            <h2 className="text-lg font-semibold text-slate-800 font-display">{t.achTitle}</h2>
+            <p className="text-xs text-slate-400">{t.achSubtitle}</p>
           </div>
         </div>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Dodaj
+          <Plus className="w-4 h-4" /> {t.addAchBtn}
         </button>
       </div>
 
       {/* Formularz dodawania */}
       {isAdding && (
         <div className="p-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Dodaj osiągnięcie / nagrodę</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{t.addNewAch}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input
               type="text"
-              placeholder="Nazwa osiągnięcia np. Certyfikat AWS Cloud Practitioner"
+              placeholder={t.achTitlePlaceholder}
               value={newAch.title}
               onChange={(e) => setNewAch({ ...newAch, title: e.target.value })}
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white"
@@ -77,7 +79,7 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white"
             />
             <textarea
-              placeholder="Opis, co to za certyfikat lub projekt, jakie wyzwanie rozwiązałeś..."
+              placeholder={t.achDescPlaceholder}
               rows={2}
               value={newAch.description}
               onChange={(e) => setNewAch({ ...newAch, description: e.target.value })}
@@ -89,13 +91,13 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
               onClick={() => setIsAdding(false)}
               className="px-3 py-1.5 text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer"
             >
-              Anuluj
+              {t.cancel}
             </button>
             <button
               onClick={handleAdd}
               className="px-3 py-1.5 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 cursor-pointer"
             >
-              Zapisz
+              {t.save}
             </button>
           </div>
         </div>
@@ -104,7 +106,7 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
       {/* Lista osiągnięć */}
       <div className="space-y-3">
         {data.length === 0 ? (
-          <p className="text-center text-xs text-slate-400 py-6">Brak dodanych osiągnięć. Kliknij 'Dodaj', aby wzmocnić swój profil zawodowy.</p>
+          <p className="text-center text-xs text-slate-400 py-6">{t.achEmpty}</p>
         ) : (
           data.map((ach) => (
             <div key={ach.id} className="p-4 bg-slate-50/30 border border-slate-100 rounded-xl flex gap-4 justify-between items-start">
@@ -124,8 +126,8 @@ export const AchievementsForm: React.FC<Props> = ({ data, onChange }) => {
               </div>
               <button
                 onClick={() => handleDelete(ach.id)}
-                className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50/50 transition-colors"
-                title="Usuń"
+                className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50/50 transition-colors cursor-pointer"
+                title={t.delete}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

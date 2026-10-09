@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { PersonalDetails } from "../types";
 import { User, Mail, Phone, Globe, Linkedin, MapPin, FileText, Upload, Trash2, Image as ImageIcon } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   data: PersonalDetails;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -21,7 +23,11 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
 
   const handleFileChange = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Proszę wybrać plik będący obrazem (PNG, JPG, WEBP).");
+      alert("Proszę wybrać plik będący obrazem (PNG, JPG, WEBP). / Please select an image file.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      alert(t.photoTooBig);
       return;
     }
 
@@ -72,15 +78,15 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
           <User className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-slate-800 font-display">Dane Osobowe</h2>
-          <p className="text-xs text-slate-400">Podstawowe dane kontaktowe do Twojego CV</p>
+          <h2 className="text-lg font-semibold text-slate-800 font-display">{t.personalTitle}</h2>
+          <p className="text-xs text-slate-400">{t.personalSubtitle}</p>
         </div>
       </div>
 
       {/* STREFA WGRYWANIA ZDJĘCIA (Drag and Drop i Kliknięcie) */}
       <div className="space-y-2">
         <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-          <ImageIcon className="w-4 h-4 text-slate-400" /> Zdjęcie profilowe
+          <ImageIcon className="w-4 h-4 text-slate-400" /> {t.photoLabel}
         </label>
         
         <div
@@ -113,20 +119,20 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
               <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-md shrink-0">
                 <img
                   src={data.photo}
-                  alt="Podgląd zdjęcia profilowego"
+                  alt="Profile Preview"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="text-center sm:text-left space-y-1 flex-1">
-                <p className="text-xs font-semibold text-slate-700">Zdjęcie wgrane pomyślnie!</p>
-                <p className="text-[10px] text-slate-400">Przeciągnij tutaj nowe zdjęcie lub kliknij, aby je zmienić.</p>
+                <p className="text-xs font-semibold text-slate-700">{t.changePhoto}</p>
+                <p className="text-[10px] text-slate-400">{t.photoHint}</p>
                 <button
                   type="button"
                   onClick={handleRemovePhoto}
                   className="mt-1 flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-md transition-colors"
                 >
-                  <Trash2 className="w-3 h-3" /> Usuń zdjęcie
+                  <Trash2 className="w-3 h-3" /> {t.removePhoto}
                 </button>
               </div>
             </div>
@@ -136,10 +142,10 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
                 <Upload className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-700">Przeciągnij i upuść zdjęcie profilowe</p>
-                <p className="text-[10px] text-slate-400">lub kliknij tutaj, aby wybrać plik z dysku</p>
+                <p className="text-xs font-semibold text-slate-700">{t.uploadPhoto}</p>
+                <p className="text-[10px] text-slate-400">{t.photoHint}</p>
               </div>
-              <p className="text-[9px] text-slate-400 uppercase tracking-wider">Formaty: PNG, JPG, WEBP</p>
+              <p className="text-[9px] text-slate-400 uppercase tracking-wider">PNG, JPG, WEBP (&lt; 3 MB)</p>
             </div>
           )}
         </div>
@@ -148,35 +154,35 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <User className="w-3.5 h-3.5 text-slate-400" /> Imię i Nazwisko
+            <User className="w-3.5 h-3.5 text-slate-400" /> {t.fullName}
           </label>
           <input
             type="text"
             name="name"
             value={data.name}
             onChange={handleChange}
-            placeholder="np. Jan Kowalski"
+            placeholder="np. Jan Kowalski / John Doe"
             className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <Mail className="w-3.5 h-3.5 text-slate-400" /> Adres E-mail
+            <Mail className="w-3.5 h-3.5 text-slate-400" /> {t.email}
           </label>
           <input
             type="email"
             name="email"
             value={data.email}
             onChange={handleChange}
-            placeholder="np. jan.kowalski@example.com"
+            placeholder="np. email@example.com"
             className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <Phone className="w-3.5 h-3.5 text-slate-400" /> Telefon
+            <Phone className="w-3.5 h-3.5 text-slate-400" /> {t.phone}
           </label>
           <input
             type="text"
@@ -190,42 +196,42 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-400" /> Lokalizacja
+            <MapPin className="w-3.5 h-3.5 text-slate-400" /> {t.location}
           </label>
           <input
             type="text"
             name="location"
             value={data.location}
             onChange={handleChange}
-            placeholder="np. Kraków, Polska"
+            placeholder="np. Kraków, Polska / London, UK"
             className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <Globe className="w-3.5 h-3.5 text-slate-400" /> Strona www / Portfolio
+            <Globe className="w-3.5 h-3.5 text-slate-400" /> {t.website}
           </label>
           <input
             type="text"
             name="website"
             value={data.website}
             onChange={handleChange}
-            placeholder="np. https://portfolio.pl"
+            placeholder="https://..."
             className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-            <Linkedin className="w-3.5 h-3.5 text-slate-400" /> Profil LinkedIn
+            <Linkedin className="w-3.5 h-3.5 text-slate-400" /> {t.linkedin}
           </label>
           <input
             type="text"
             name="linkedin"
             value={data.linkedin}
             onChange={handleChange}
-            placeholder="np. https://linkedin.com/in/jan"
+            placeholder="https://linkedin.com/in/..."
             className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
           />
         </div>
@@ -233,14 +239,14 @@ export const PersonalDetailsForm: React.FC<Props> = ({ data, onChange }) => {
 
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-slate-500 flex items-center gap-1">
-          <FileText className="w-3.5 h-3.5 text-slate-400" /> Podsumowanie zawodowe (Bio)
+          <FileText className="w-3.5 h-3.5 text-slate-400" /> {t.bio}
         </label>
         <textarea
           name="bio"
           value={data.bio}
           onChange={handleChange}
           rows={3}
-          placeholder="Krótki, chwytliwy opis Twoich celów zawodowych i kluczowych wartości..."
+          placeholder={t.bioPlaceholder}
           className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
         />
       </div>

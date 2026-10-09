@@ -1,9 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Cyfrowy Kreator CV</title>
+    <meta name="description" content="Profesjonalny kreator cyfrowego profilu i życiorysu zawodowego z inteligentnym doradcą AI wyciągającym wnioski oraz generującym spersonalizowane CV na podstawie ofert pracy." />
+    <meta property="og:title" content="Cyfrowy Kreator CV" />
+    <meta property="og:description" content="Profesjonalny kreator cyfrowego profilu i życiorysu zawodowego z inteligentnym doradcą AI wyciągającym wnioski oraz generującym spersonalizowane CV na podstawie ofert pracy." />
+    <script>
+      // Ignoruj nieszkodliwe błędy połączenia WebSocket Vite HMR w środowisku podglądu iframe
+      window.addEventListener('unhandledrejection', function(event) {
+        if (
+          event.reason &&
+          (event.reason.message?.includes('WebSocket') ||
+           event.reason.stack?.includes('@vite/client') ||
+           event.reason.stack?.includes('createWebSocketModuleRunnerTransport'))
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      });
+      window.addEventListener('error', function(event) {
+        if (
+          event.message?.includes('WebSocket') ||
+          event.filename?.includes('@vite/client') ||
+          (event.error && event.error.stack && event.error.stack.includes('@vite/client'))
+        ) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>

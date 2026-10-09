@@ -1,36 +1,56 @@
 import React, { useState } from "react";
 import { Skill } from "../types";
-import { Star, Plus, Trash2, Award } from "lucide-react";
+import { Plus, Trash2, Award } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   data: Skill[];
   onChange: (data: Skill[]) => void;
 }
 
-const CATEGORIES = [
-  "Umiejętności techniczne",
-  "Umiejętności miękkie",
-  "Narzędzia i oprogramowanie",
-  "Języki obce",
-  "Inne",
-];
-
-const PROFICIENCIES: Array<Skill["proficiency"]> = ["Podstawowy", "Średni", "Zaawansowany", "Ekspert"];
-
 export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
+  const { language, t } = useLanguage();
+  const isEn = language === "en";
+
+  const CATEGORIES = isEn
+    ? [
+        "Technical Skills",
+        "Soft Skills",
+        "Tools & Software",
+        "Other"
+      ]
+    : [
+        "Umiejętności techniczne",
+        "Umiejętności miękkie",
+        "Narzędzia i oprogramowanie",
+        "Inne"
+      ];
+
+  const PROFICIENCIES: Array<Skill["proficiency"]> = ["Podstawowy", "Średni", "Zaawansowany", "Ekspert"];
+
+  const getProficiencyLabel = (p: Skill["proficiency"]) => {
+    if (!isEn) return p;
+    switch (p) {
+      case "Podstawowy": return "Beginner";
+      case "Średni": return "Intermediate";
+      case "Zaawansowany": return "Advanced";
+      case "Ekspert": return "Expert";
+    }
+  };
+
   const [newSkill, setNewSkill] = useState<{
     name: string;
     category: string;
     proficiency: Skill["proficiency"];
   }>({
     name: "",
-    category: "Umiejętności techniczne",
+    category: isEn ? "Technical Skills" : "Umiejętności techniczne",
     proficiency: "Średni",
   });
 
   const handleAdd = () => {
     if (!newSkill.name.trim()) {
-      alert("Nazwa umiejętności jest wymagana.");
+      alert(isEn ? "Skill name is required." : "Nazwa umiejętności jest wymagana.");
       return;
     }
     const created: Skill = {
@@ -71,8 +91,8 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
             <Award className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 font-display">Umiejętności</h2>
-            <p className="text-xs text-slate-400">Twoje kluczowe kompetencje twarde i miękkie</p>
+            <h2 className="text-lg font-semibold text-slate-800 font-display">{t.skillsTitle}</h2>
+            <p className="text-xs text-slate-400">{t.skillsSubtitle}</p>
           </div>
         </div>
       </div>
@@ -80,10 +100,10 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
       {/* Panel szybkiego dodawania umiejętności */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end bg-slate-50/50 p-4 rounded-xl border border-slate-100">
         <div className="space-y-1.5 md:col-span-2">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Nazwa umiejętności</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">{t.skillNameLabel}</label>
           <input
             type="text"
-            placeholder="np. SQL, Zarządzanie zespołem, Figma"
+            placeholder={t.skillNamePlaceholder}
             value={newSkill.name}
             onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
             className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white"
@@ -91,7 +111,7 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Kategoria</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">{t.skillCategoryLabel}</label>
           <select
             value={newSkill.category}
             onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
@@ -106,7 +126,7 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Poziom</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">{t.skillProficiencyLabel}</label>
           <div className="flex gap-1.5">
             <select
               value={newSkill.proficiency}
@@ -115,7 +135,7 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
             >
               {PROFICIENCIES.map((p) => (
                 <option key={p} value={p}>
-                  {p}
+                  {getProficiencyLabel(p)}
                 </option>
               ))}
             </select>
@@ -131,7 +151,7 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
 
       {/* Grupy umiejętności */}
       <div className="space-y-4">
-        {CATEGORIES.map((cat) => {
+        {Array.from(new Set(data.map((s) => s.category))).map((cat) => {
           const filtered = data.filter((s) => s.category === cat);
           if (filtered.length === 0) return null;
 
@@ -146,12 +166,12 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
                   >
                     <span className="font-medium text-slate-700">{skill.name}</span>
                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border uppercase ${getBadgeColor(skill.proficiency)}`}>
-                      {skill.proficiency}
+                      {getProficiencyLabel(skill.proficiency)}
                     </span>
                     <button
                       onClick={() => handleDelete(skill.id)}
-                      className="text-slate-300 hover:text-red-500 transition-colors focus:outline-none"
-                      title="Usuń"
+                      className="text-slate-300 hover:text-red-500 transition-colors focus:outline-none cursor-pointer"
+                      title={t.deleteTooltip}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -163,7 +183,7 @@ export const SkillsForm: React.FC<Props> = ({ data, onChange }) => {
         })}
 
         {data.length === 0 && (
-          <p className="text-center text-xs text-slate-400 py-6">Brak umiejętności w profilu. Dodaj kilka u góry.</p>
+          <p className="text-center text-xs text-slate-400 py-6">{t.skillsEmptySub}</p>
         )}
       </div>
     </div>

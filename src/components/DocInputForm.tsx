@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { DocumentInput } from "../types";
 import { FileText, Link as LinkIcon, Plus, Trash2, Calendar, Sparkles, UploadCloud, FileUp } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface Props {
   data: DocumentInput[];
@@ -19,6 +20,7 @@ export const DocInputForm: React.FC<Props> = ({
   onParsePdf,
   isParsingPdf
 }) => {
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [type, setType] = useState<DocumentInput["type"]>("text");
   const [content, setContent] = useState("");
@@ -27,7 +29,7 @@ export const DocInputForm: React.FC<Props> = ({
 
   const processFile = (file: File) => {
     if (file.type !== "application/pdf") {
-      alert("Obsługiwane są wyłącznie pliki PDF.");
+      alert(t.pdfOnlyAlert);
       return;
     }
 
@@ -68,7 +70,7 @@ export const DocInputForm: React.FC<Props> = ({
 
   const handleAddAndAnalyze = async () => {
     if (!title.trim() || !content.trim()) {
-      alert("Tytuł oraz treść/link są wymagane do analizy.");
+      alert(t.docRequired);
       return;
     }
 
@@ -101,8 +103,8 @@ export const DocInputForm: React.FC<Props> = ({
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-800 font-display">Skaner i Notatki (Dokumenty)</h2>
-            <p className="text-xs text-slate-400">Dodaj referencje, notatki, linki lub całe opisy prac</p>
+            <h2 className="text-lg font-semibold text-slate-800 font-display">{t.docsHeaderTitle}</h2>
+            <p className="text-xs text-slate-400">{t.docsHeaderSub}</p>
           </div>
         </div>
       </div>
@@ -136,17 +138,17 @@ export const DocInputForm: React.FC<Props> = ({
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-850">Inteligentny Skaner CV (Import z pliku PDF)</h3>
+            <h3 className="text-sm font-bold text-slate-850">{t.scannerTitle}</h3>
             <p className="text-xs text-slate-400">
-              Przeciągnij i upuść plik PDF ze swoim dotychczasowym CV lub <span onClick={() => fileInputRef.current?.click()} className="text-blue-600 hover:text-blue-700 font-semibold underline cursor-pointer">wybierz go z dysku</span>
+              {t.scannerDropText} <span onClick={() => fileInputRef.current?.click()} className="text-blue-600 hover:text-blue-700 font-semibold underline cursor-pointer">{t.scannerSelectDisk}</span>
             </p>
-            <p className="text-[10px] text-slate-400">Model Gemini Flash przeanalizuje plik i zaproponuje automatyczne uzupełnienie sekcji Twojego profilu zawodowego.</p>
+            <p className="text-[10px] text-slate-400">{t.scannerSub}</p>
           </div>
 
           {isParsingPdf ? (
             <div className="py-2 space-y-1.5">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full animate-pulse">
-                <Sparkles className="w-3.5 h-3.5" /> Analizowanie pliku PDF przez Gemini Flash...
+                <Sparkles className="w-3.5 h-3.5" /> {t.scannerParsing}
               </span>
             </div>
           ) : (
@@ -154,7 +156,7 @@ export const DocInputForm: React.FC<Props> = ({
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5"
             >
-              <FileUp className="w-3.5 h-3.5" /> Wybierz plik PDF
+              <FileUp className="w-3.5 h-3.5" /> {t.scannerSelectBtn}
             </button>
           )}
         </div>
@@ -164,17 +166,17 @@ export const DocInputForm: React.FC<Props> = ({
       <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Analizator Treści AI
+            <Sparkles className="w-3.5 h-3.5 text-rose-500" /> {t.aiContentAnalyzer}
           </h3>
           <span className="text-[10px] bg-rose-50 border border-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold">
-            Automatyczne Wnioski
+            {t.autoConclusionsBadge}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input
             type="text"
-            placeholder="Tytuł / źródło (np. Opinia szefa, Link do LinkedIn)"
+            placeholder={t.docTitleInputPlaceholder}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white md:col-span-2"
@@ -184,18 +186,14 @@ export const DocInputForm: React.FC<Props> = ({
             onChange={(e) => setType(e.target.value as DocumentInput["type"])}
             className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white"
           >
-            <option value="text">Notatki / Luźny Tekst</option>
-            <option value="link">Link internetowy (np. LinkedIn)</option>
-            <option value="document">Dokument / Referencje</option>
+            <option value="text">{t.typeText}</option>
+            <option value="link">{t.typeLink}</option>
+            <option value="document">{t.typeDocument}</option>
           </select>
         </div>
 
         <textarea
-          placeholder={
-            type === "link"
-              ? "Wklej link lub treść z danej strony internetowej, z której chcesz wyciągnąć wnioski..."
-              : "Wklej tutaj tekst referencji, listę zadań, skopiowany profil, CV, luźne myśli o Twojej karierze, a AI wyciągnie z nich ukryte wnioski, umiejętności i doda do Twojej bazy wiedzy."
-          }
+          placeholder={type === "link" ? t.linkPlaceholder : t.notesPlaceholder}
           rows={4}
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -211,11 +209,11 @@ export const DocInputForm: React.FC<Props> = ({
             {isAnalyzing ? (
               <>
                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Analizowanie treści...
+                {t.analyzingContent}
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5" /> Dodaj i Wyciągnij Wnioski
+                <Sparkles className="w-3.5 h-3.5" /> {t.addAndDrawBtn}
               </>
             )}
           </button>
@@ -224,9 +222,9 @@ export const DocInputForm: React.FC<Props> = ({
 
       {/* Lista historii dodanych dokumentów */}
       <div className="space-y-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Twoje Dodane Dokumenty ({data.length})</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.yourDocs} ({data.length})</h3>
         {data.length === 0 ? (
-          <p className="text-center text-xs text-slate-400 py-4">Brak powiązanych dokumentów lub luźnego tekstu.</p>
+          <p className="text-center text-xs text-slate-400 py-4">{t.noDocs}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {data.map((doc) => (
@@ -247,8 +245,8 @@ export const DocInputForm: React.FC<Props> = ({
                 </div>
                 <button
                   onClick={() => handleDelete(doc.id)}
-                  className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                  title="Usuń"
+                  className="absolute top-3 right-3 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                  title={t.delete}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
