@@ -1,5 +1,5 @@
 {
-  "name": "Cyfrowy Kreator CV",
+  "name": "Ultimate CV",
   "description": "Profesjonalny kreator cyfrowego profilu i życiorysu zawodowego z inteligentnym doradcą AI wyciągającym wnioski oraz generującym spersonalizowane CV na podstawie ofert pracy.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

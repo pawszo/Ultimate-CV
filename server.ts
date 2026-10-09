@@ -368,11 +368,26 @@ app.post("/api/gemini/generate-resume", async (req, res) => {
         : "Zastosuj styl kreatywny i dynamiczny. Możesz użyć nielicznych, nowoczesnych i profesjonalnych ikon/emotikonów jako punktorów przy sekcjach. Wstęp (podsumowanie zawodowe) sformatuj w bardzo chwytliwy i nieszablonowy sposób, aby od razu przykuć uwagę rekrutera.";
     }
 
-    const languageDirective = isEnglish
-      ? "LANGUAGE DIRECTIVE: Generate the entire resume (headings, descriptions, summary, and tailoring decisions) in ENGLISH."
-      : "DYREKTYWA JĘZYKOWA: Wygeneruj całe CV (nagłówki, opisy, podsumowanie oraz decyzje rekrutacyjne) w JĘZYKU POLSKIM.";
+    const langNames: Record<string, string> = {
+      pl: "POLISH (Język polski)",
+      en: "ENGLISH",
+      de: "GERMAN (Deutsch)",
+      es: "SPANISH (Español)",
+      fr: "FRENCH (Français)"
+    };
+    const targetLangName = langNames[resumeLanguage] || (resumeLanguage === "en" ? "ENGLISH" : "POLISH");
 
-    const prompt = `As an elite technical recruiter and career strategist, create a perfectly tailored resume based on the user's profile and the provided job posting.
+    const languageDirective = `LANGUAGE DIRECTIVE: Generate the entire resume (headings, descriptions, professional summary, and tailoring decisions) strictly in ${targetLangName}.`;
+
+    const offerSection = jobOffer && jobOffer.trim()
+      ? `Job Posting Requirements:
+---
+${jobOffer}
+---`
+      : `General Profile Presentation:
+No specific job advertisement was provided. Generate a comprehensive, high-impact professional resume highlighting the candidate's strongest skills, experiences, and accomplishments across their whole career profile.`;
+
+    const prompt = `As an elite technical recruiter and career strategist, create a perfectly tailored resume based on the user's profile and requirements.
 
 ${languageDirective}
 
@@ -380,19 +395,19 @@ DOCUMENT STYLE REQUIREMENTS FOR TEMPLATE "${templateId}":
 ${templateInstruction}
 
 TAILORING & SELECTION RULES:
-1. Analyze the job posting and identify key requirements, keywords, and expectations.
+1. Analyze the profile (and job posting if provided) to identify key strengths, keywords, and expectations.
 2. From the user profile (and deductions):
-   - HIGHLIGHT relevant skills, experiences, and accomplishments that directly match the role.
+   - HIGHLIGHT relevant skills, experiences, and accomplishments that directly match high-level industry standards.
    - OMIT or de-emphasize completely irrelevant elements.
 3. PAGE FIT OPTIMIZATION (Crucial):
    - Aim for EXACTLY ONE FULL A4 PAGE (or two full pages only if the career is extensive).
    - Condense bullets to 3-4 impactful items per job.
-4. Create an engaging professional summary.
-5. Generate the complete CV in Markdown format.
+4. Create an engaging professional summary in ${targetLangName}.
+5. Generate the complete CV in Markdown format in ${targetLangName}.
 ${includePhoto ? "User chose to include a profile photo. Ensure markdown layout works harmoniously with a photo in the top right." : "User chose not to include a photo."}
 6. FOREIGN LANGUAGES:
    - If user has languages, ALWAYS include them in a dedicated '## ${isEnglish ? "LANGUAGES" : "JĘZYKI OBCE"}' section using EXACTLY the proficiency levels specified by the user.
-7. Prepare a list of tailoringDecisions explaining why specific highlights or omissions were made.
+7. Prepare a list of tailoringDecisions in ${targetLangName} explaining why specific highlights or omissions were made.
 
 Oto profil użytkownika / User Profile:
 ${JSON.stringify(profile, null, 2)}
@@ -400,10 +415,7 @@ ${JSON.stringify(profile, null, 2)}
 Oto wnioski AI / AI Deductions:
 ${JSON.stringify(conclusions, null, 2)}
 
-Oto treść oferty pracy / Job Posting:
----
-${jobOffer}
----`;
+${offerSection}`;
 
   const response = await generateWithFallback(ai, {
     contents: prompt,
@@ -433,7 +445,8 @@ ${jobOffer}
     }
   });
 
-  const parsed = cleanAndParseJson(response.text, {});
+  const parsed: any = cleanAndParseJson(response.text, {});
+  parsed.language = resumeLanguage;
   res.json(parsed);
 } catch (error: any) {
   console.log("[Doradca AI] generate-resume: chwilowy problem lub limit");
@@ -443,6 +456,55 @@ ${jobOffer}
     : "Wystąpił problem podczas dopasowywania CV. Spróbuj ponownie za chwilę.";
   res.status(500).json({ error: msg });
 }
+});
+
+// 3b. Tłumaczenie podglądu dokumentu (lookup) oraz eksportowanego pliku na wybrany język
+app.post("/api/gemini/translate-resume", async (req, res) => {
+  try {
+    const ai = getGeminiClient();
+    const { markdown, targetLanguage = "en" } = req.body;
+
+    if (!markdown || !markdown.trim()) {
+      return res.status(400).json({ error: "Brak treści CV do przetłumaczenia." });
+    }
+
+    const langNames: Record<string, string> = {
+      pl: "POLISH (Język polski)",
+      en: "ENGLISH",
+      de: "GERMAN (Deutsch)",
+      es: "SPANISH (Español)",
+      fr: "FRENCH (Français)"
+    };
+    const targetName = langNames[targetLanguage] || targetLanguage;
+
+    const prompt = `Translate the following professional CV/Resume Markdown document into ${targetName}.
+RULES:
+1. Preserve ALL original Markdown formatting, hierarchy, headers (H1, H2, H3), bold text, bullet points, and code tags (e.g. \`React\`).
+2. Translate all section titles to standard, accepted resume terminology in ${targetName} (e.g., in English: "PROFESSIONAL SUMMARY", "WORK EXPERIENCE", "EDUCATION", "SKILLS", "LANGUAGES", "ACHIEVEMENTS"; in Polish: "PODSUMOWANIE ZAWODOWE", "DOŚWIADCZENIE ZAWODOWE", "WYKSZTAŁCENIE", "UMIEJĘTNOŚCI", "JĘZYKI OBCE", "OSIĄGNIĘCIA I CERTYFIKATY"; in German: "PROFIL", "BERUFSERFAHRUNG", "AUSBILDUNG", "FACHKENNTNISSE", "SPRACHEN", "ZERTIFIKATE"; in Spanish: "RESUMEN PROFESIONAL", "EXPERIENCIA LABORAL", "EDUCACIÓN", "HABILIDADES", "IDIOMAS", "LOGROS"; in French: "RÉSUMÉ PROFESSIONNEL", "EXPÉRIENCE PROFESSIONNELLE", "FORMATION", "COMPÉTENCES", "LANGUES", "CERTIFICATIONS").
+3. Translate job roles, responsibilities, bullet point achievements into idiomatic, active-voice, professional business language.
+4. Keep personal contact details (names, email addresses, phone numbers, GitHub/LinkedIn URLs, locations) intact.
+5. Return ONLY the translated Markdown. Do not include conversational remarks or markdown code fence wrappers (\`\`\`markdown ... \`\`\`).
+
+Original Resume Markdown:
+---
+${markdown}
+---`;
+
+    const response = await generateWithFallback(ai, {
+      contents: prompt,
+      config: {
+        systemInstruction: `You are an elite multilingual executive resume translator. Translate the resume cleanly into ${targetName} preserving exact Markdown structure.`
+      }
+    });
+
+    let translatedMarkdown = response.text || "";
+    translatedMarkdown = translatedMarkdown.replace(/^```markdown\s*/i, "").replace(/^```\s*/, "").replace(/```\s*$/, "").trim();
+
+    return res.json({ translatedMarkdown, language: targetLanguage });
+  } catch (error: any) {
+    console.error("Translation error in /api/gemini/translate-resume:", error);
+    res.status(500).json({ error: "Nie udało się przetłumaczyć CV. Spróbuj ponownie za chwilę." });
+  }
 });
 
 // 4. Parsowanie i wyodrębnianie struktury profilu z dołączonego pliku PDF z CV

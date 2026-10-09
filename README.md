@@ -1,4 +1,4 @@
-# 📄 Cyfrowy Kreator CV / Digital Resume Creator
+# 📄 Ultimate CV / Digital Resume Creator
 
 > **Inteligentny kreator życiorysu zawodowego napędzany sztuczną inteligencją Gemini.**  
 > Twórz nieskazitelne, spersonalizowane profile zawodowe, analizuj oferty pracy, wyciągaj ukryte kompetencje i generuj dopasowane dokumenty CV gotowe do pobrania w formacie PDF lub Markdown.
@@ -32,7 +32,7 @@
 
 ## 🚀 Wprowadzenie / Introduction
 
-**Cyfrowy Kreator CV** rozwiązuje odwieczny problem żmudnego formatowania życiorysów i dopasowywania ich do dziesiątek różnych ogłoszeń rekrutacyjnych. Aplikacja nie tylko porządkuje historię zatrudnienia, ale korzysta z zaawansowanych modeli **Google Gemini**, aby:
+**Ultimate CV** rozwiązuje odwieczny problem żmudnego formatowania życiorysów i dopasowywania ich do dziesiątek różnych ogłoszeń rekrutacyjnych. Aplikacja nie tylko porządkuje historię zatrudnienia, ale korzysta z zaawansowanych modeli **Google Gemini**, aby:
 1. Analizować Twoje doświadczenie i **dedukować ukryte umiejętności** (np. programista -> zaawansowane myślenie analityczne i rozwiązywanie problemów).
 2. Generować w kilka sekund **idealnie skrojone CV pod konkretne ogłoszenie o pracę**, eksponując dokładnie te słowa kluczowe i projekty, których szuka rekruter lub system ATS.
 3. Wyjaśniać każdą decyzję rekrutacyjną (dlaczego dany element został wyróżniony, a inny pominięty).
@@ -91,10 +91,10 @@ Aplikacja posiada **pełne wsparcie dwujęzyczne (Polski / English)** – przeł
 
 ### 5. Generowanie CV dopasowanego do oferty pracy
 1. Przejdź do zakładki **"Dopasuj do Oferty"**.
-2. Wklej pełną treść ogłoszenia o pracę (wymagania, opis stanowiska, technologie).
+2. Wklej pełną treść ogłoszenia o pracę (wymagania, opis stanowiska, technologie) lub kliknij **"Generuj ogólne CV"**, aby stworzyć reprezentacyjne CV bez podawania oferty.
 3. Skonfiguruj parametry dokumentu:
    - **Szablon graficzny**: Wybierz jeden z 4 dostępnych stylów (Klasyczny, Nowoczesny, Techniczny IT, Kreatywny).
-   - **Język dokumentu**: Wybierz, czy wygenerowane CV ma być w języku **Polskim** czy **Angielskim**.
+   - **Język tworzonego dokumentu**: Wybierz język generowania spośród: 🇵🇱 Polski (PL), 🇬🇧 Angielski (EN), 🇩🇪 Niemiecki (DE), 🇪🇸 Hiszpański (ES), 🇫🇷 Francuski (FR).
    - **Zdjęcie profilowe**: Zaznacz, czy chcesz umieścić zdjęcie w nagłówku CV.
 4. Kliknij **"Wygeneruj spersonalizowane CV"**.
 5. Po chwili po prawej stronie pojawi się:
@@ -102,9 +102,20 @@ Aplikacja posiada **pełne wsparcie dwujęzyczne (Polski / English)** – przeł
    - **Podsumowanie profilu**: 3-4 mocne zdania otwierające CV.
    - **Arkusz podglądu A4**: Renderowany zoptymalizowany dokument.
 
-### 6. Eksport do PDF oraz Markdown
-- Aby pobrać dokument gotowy do wysłania pracodawcy, kliknij **"Pobierz PDF"**. Aplikacja wygeneruje idealnie sformatowany wielostronicowy lub jednostronicowy plik PDF z zachowaniem marginesów.
-- Aby pobrać kod źródłowy życiorysu, kliknij **"Pobierz Markdown (.md)"**.
+### 6. Wybór języka podglądu (Lookup) oraz eksportowanego pliku
+- **Wybór języka podglądu (Lookup)**:
+  - W górnym pasku dokumentu znajduje się przełącznik **"Język podglądu (Lookup)"** (🇵🇱 PL, 🇬🇧 EN, 🇩🇪 DE, 🇪🇸 ES, 🇫🇷 FR).
+  - Kliknięcie dowolnego języka natychmiast tłumaczy i aktualizuje podgląd dokumentu w locie z zachowaniem oryginalnego układu i formatowania.
+  - Tłumaczenia są zapamiętywane w pamięci podręcznej, co pozwala na natychmiastowe przełączanie się między językami.
+- **Wybór języka i formatu eksportowanego pliku**:
+  - Kliknij przycisk **"Eksportuj plik"** lub szybki przycisk **"Pobierz PDF"**.
+  - W oknie opcji eksportu możesz wybrać:
+    - **Język pliku docelowego**: Wybierz dowolny z obsługiwanych języków (PL, EN, DE, ES, FR).
+    - **Format pliku**:
+      - **PDF (.pdf)**: Gotowy do druku dokument A4 o wysokiej rozdzielczości z zachowaniem stylów i marginesów.
+      - **Markdown (.md)**: Surowy plik tekstowy ze strukturą Markdown.
+      - **Czysty tekst (.txt)**: Tekst sformatowany do łatwego wklejania w formularze systemów rekrutacyjnych (ATS).
+  - Nazwa pobranego pliku automatycznie uwzględnia imię i nazwisko kandydata oraz kod języka (np. `CV_Jan_Kowalski_EN.pdf`).
 
 ### 7. Kopia zapasowa, szyfrowanie (.cvp) i chmura
 - **Eksport zaszyfrowany (.cvp)**: W nagłówku kliknij ikonę pobierania/eksportu. Podaj hasło szyfrowania – profil zostanie zaszyfrowany algorytmem AES.
@@ -132,19 +143,29 @@ Aplikacja posiada **pełne wsparcie dwujęzyczne (Polski / English)** – przeł
 - Click **"Refresh advisor questions"** to get contextual, targeted interview prompts based on your current profile gaps (such as missing metrics, KPIs, or tech stack details).
 - Answering these prompts strengthens your resume's competitive edge.
 
-### 4. Tailored Resume Generation for Job Postings
+### 4. Tailored & General Resume Generation
 - Head to the **"Tailor to Job Offer"** tab.
-- Paste the target job posting (requirements, responsibilities, keywords).
+- Paste the target job posting (requirements, responsibilities, keywords) or click **"Generate General CV"** to create a complete resume directly from your profile without a specific job offer.
 - Choose:
   - **Template style**: Classic, Modern, Tech (IT / DevOps), or Creative.
-  - **Output Language**: Polish or English.
+  - **Document Language**: Select target language: 🇵🇱 Polish (PL), 🇬🇧 English (EN), 🇩🇪 German (DE), 🇪🇸 Spanish (ES), 🇫🇷 French (FR).
   - **Photo toggle**: Enable or disable profile photo display.
-- Hit **"Generate Tailored Resume"**.
+- Hit **"Generate Resume"**.
 - Review the **AI Tailoring Decisions** table to understand why specific roles were highlighted or omitted to match the role's ATS requirements.
 
-### 5. Export to PDF & Markdown
-- Click **"Download PDF"** to produce an A4-optimized PDF file ready to submit to recruiters.
-- Click **"Download Markdown (.md)"** for raw text format.
+### 5. Document Lookup & File Export Language Selection
+- **Document Lookup Language**:
+  - Switch the **"Lookup Language"** toolbar at the top of the preview to instantly view the resume in 🇵🇱 PL, 🇬🇧 EN, 🇩🇪 DE, 🇪🇸 ES, or 🇫🇷 FR.
+  - The document is translated on the fly by Gemini, maintaining exact markdown formatting, structure, and design.
+  - Translations are cached for immediate switching.
+- **Exported File Language & Formats**:
+  - Click **"Export File"** to open export options.
+  - Choose your desired **File Language** (PL, EN, DE, ES, FR).
+  - Select your desired **Format**:
+    - **PDF (.pdf)**: High-resolution print-ready A4 document formatted with styles and photos.
+    - **Markdown (.md)**: Plain text with markdown hierarchy.
+    - **Plain Text (.txt)**: Clean unformatted text for pasting into application tracking systems (ATS).
+  - Downloaded filenames include candidate name and language code (e.g. `CV_John_Doe_EN.pdf`).
 
 ### 6. Encryption, Cloud Sync & Backups
 - **Encrypted Export (.cvp)**: Export your full profile encrypted with an AES password via the shield/download button.
@@ -174,7 +195,7 @@ Aplikacja posiada **pełne wsparcie dwujęzyczne (Polski / English)** – przeł
 ### Krok 1: Klonowanie i instalacja pakietów
 ```bash
 git clone <adres-repozytorium>
-cd cyfrowy-kreator-cv
+cd ultimate-cv
 npm install
 ```
 

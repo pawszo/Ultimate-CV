@@ -556,14 +556,19 @@ export default function App() {
       <header className="no-print bg-white border-b border-slate-100 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl text-white shadow-sm">
+            <div className="p-2.5 bg-gradient-to-tr from-blue-600 via-indigo-600 to-indigo-700 rounded-xl text-white shadow-sm ring-2 ring-blue-500/10">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-extrabold text-slate-800 tracking-tight font-display">
-                {t.appTitle}
-              </h1>
-              <p className="text-[10px] text-slate-400 font-semibold">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 font-display">
+                  {t.appTitle}
+                </h1>
+                <span className="hidden sm:inline-flex text-[9px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-200/60 shadow-2xs">
+                  AI Suite
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-semibold">
                 {t.appSubtitle}
               </p>
             </div>
@@ -938,6 +943,27 @@ export default function App() {
         {/* ZAKŁADKA 1: MÓJ PROFIL */}
         {activeTab === "profile" && (
           <div className="no-print space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-800 font-display">
+                      {t.profileHeaderTitle}
+                    </h2>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200/50">
+                      Ultimate CV
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {t.profileHeaderSub}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <PersonalDetailsForm

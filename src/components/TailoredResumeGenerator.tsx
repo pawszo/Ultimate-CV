@@ -6,9 +6,24 @@ import { TailoredResume, UserProfile } from "../types";
 import { 
   Sparkles, FileText, ChevronRight, Copy, Printer, Check, Info, 
   Briefcase, Award, CheckCircle2, Sliders,
-  Edit3, Eye, Undo2, Bold, List, Code, Heading2, Download, Globe2
+  Edit3, Eye, Undo2, Bold, List, Code, Heading2, Download, Globe2,
+  FileDown, X
 } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
+
+export interface DocumentLanguageOption {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+export const DOC_LANGUAGES: DocumentLanguageOption[] = [
+  { code: "pl", name: "Polski", flag: "🇵🇱" },
+  { code: "en", name: "English", flag: "🇬🇧" },
+  { code: "de", name: "Deutsch", flag: "🇩🇪" },
+  { code: "es", name: "Español", flag: "🇪🇸" },
+  { code: "fr", name: "Français", flag: "🇫🇷" }
+];
 
 interface Props {
   profile: UserProfile;
@@ -92,7 +107,15 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
   const [measuredPages, setMeasuredPages] = useState<number>(1);
   const [editedMarkdown, setEditedMarkdown] = useState<string>("");
   const [activeTabMode, setActiveTabMode] = useState<"preview" | "edit">("preview");
-  const [targetResumeLang, setTargetResumeLang] = useState<"pl" | "en">(language);
+  const [targetResumeLang, setTargetResumeLang] = useState<string>(language);
+  const [lookupLanguage, setLookupLanguage] = useState<string>(language);
+  const [exportLanguage, setExportLanguage] = useState<string>(language);
+  const [translationsCache, setTranslationsCache] = useState<Record<string, string>>({});
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "md" | "txt">("pdf");
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
   const resumePrintRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -108,6 +131,13 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
   useEffect(() => {
     if (tailoredResume?.tailoredResumeMarkdown) {
       setEditedMarkdown(tailoredResume.tailoredResumeMarkdown);
+      const initialLang = (tailoredResume as any).language || targetResumeLang || language;
+      setLookupLanguage(initialLang);
+      setExportLanguage(initialLang);
+      setTranslationsCache(prev => ({
+        ...prev,
+        [initialLang]: tailoredResume.tailoredResumeMarkdown
+      }));
     }
   }, [tailoredResume?.tailoredResumeMarkdown]);
 
@@ -186,8 +216,104 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
     window.print();
   };
 
-  const handleDownloadPdf = async () => {
+  // Przełączanie języka podglądu dokumentu (Lookup) w locie
+  const handleSwitchLookupLanguage = async (newLang: string) => {
+    if (newLang === lookupLanguage) return;
+
+    if (translationsCache[newLang]) {
+      setEditedMarkdown(translationsCache[newLang]);
+      setLookupLanguage(newLang);
+      setExportLanguage(newLang);
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const res = await fetch("/api/gemini/translate-resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          markdown: currentMarkdown,
+          targetLanguage: newLang,
+          sourceLanguage: lookupLanguage
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("Błąd podczas tłumaczenia dokumentu");
+      }
+
+      const data = await res.json();
+      if (data.translatedMarkdown) {
+        setTranslationsCache(prev => ({
+          ...prev,
+          [newLang]: data.translatedMarkdown
+        }));
+        setEditedMarkdown(data.translatedMarkdown);
+        setLookupLanguage(newLang);
+        setExportLanguage(newLang);
+        const langObj = DOC_LANGUAGES.find(l => l.code === newLang);
+        setToastMsg(interpolate(t.translateSuccess, { lang: langObj?.name || newLang.toUpperCase() }));
+        setTimeout(() => setToastMsg(null), 3000);
+      }
+    } catch (err: any) {
+      console.error("Translation error:", err);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Pobieranie pliku Markdown (.md)
+  const handleDownloadMarkdown = (targetLang: string = exportLanguage) => {
+    const content = translationsCache[targetLang] || (targetLang === lookupLanguage ? currentMarkdown : "");
+    if (!content) return;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const rawName = profile?.personal?.name || "kandydat";
+    const cleanName = rawName.trim().replace(/\s+/g, "_") || "resume";
+    link.href = url;
+    link.download = `CV_${cleanName}_${targetLang.toUpperCase()}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setToastMsg(t.downloadedMd);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  // Pobieranie pliku czystego tekstu (.txt)
+  const handleDownloadTxt = (targetLang: string = exportLanguage) => {
+    const content = translationsCache[targetLang] || (targetLang === lookupLanguage ? currentMarkdown : "");
+    if (!content) return;
+    const plainText = content
+      .replace(/^#+\s+/gm, "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/`(.*?)`/g, "$1");
+    const blob = new Blob([plainText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const rawName = profile?.personal?.name || "kandydat";
+    const cleanName = rawName.trim().replace(/\s+/g, "_") || "resume";
+    link.href = url;
+    link.download = `CV_${cleanName}_${targetLang.toUpperCase()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setToastMsg(t.downloadedTxt);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  // Pobieranie gotowego dokumentu PDF z uwzględnieniem wybranego języka
+  const handleDownloadPdf = async (targetLang: string = exportLanguage) => {
     if (!resumePrintRef.current || !tailoredResume) return;
+
+    if (targetLang !== lookupLanguage) {
+      await handleSwitchLookupLanguage(targetLang);
+      await new Promise(r => setTimeout(r, 120));
+    }
 
     if (activeTabMode === "edit") {
       setActiveTabMode("preview");
@@ -254,7 +380,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
 
       const rawName = profile?.personal?.name || "kandydat";
       const cleanName = rawName.trim().replace(/\s+/g, "_") || "resume";
-      const filename = `CV_${cleanName}_tailored.pdf`;
+      const filename = `CV_${cleanName}_${targetLang.toUpperCase()}.pdf`;
       pdf.save(filename);
 
       setPdfDownloaded(true);
@@ -263,6 +389,24 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
       window.print();
     } finally {
       setIsExportingPdf(false);
+    }
+  };
+
+  // Wykonanie wybranego eksportu z okna dialogowego
+  const handleExecuteExport = async () => {
+    setShowExportModal(false);
+    if (exportFormat === "pdf") {
+      await handleDownloadPdf(exportLanguage);
+    } else if (exportFormat === "md") {
+      if (exportLanguage !== lookupLanguage && !translationsCache[exportLanguage]) {
+        await handleSwitchLookupLanguage(exportLanguage);
+      }
+      handleDownloadMarkdown(exportLanguage);
+    } else if (exportFormat === "txt") {
+      if (exportLanguage !== lookupLanguage && !translationsCache[exportLanguage]) {
+        await handleSwitchLookupLanguage(exportLanguage);
+      }
+      handleDownloadTxt(exportLanguage);
     }
   };
 
@@ -289,31 +433,30 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
             <Globe2 className="w-4 h-4 text-slate-500" />
             <span className="font-semibold text-slate-600 text-[11px] hidden sm:inline">{t.resumeLangBadge}</span>
             <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setTargetResumeLang("pl")}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                  targetResumeLang === "pl" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                🇵🇱 PL
-              </button>
-              <button
-                type="button"
-                onClick={() => setTargetResumeLang("en")}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                  targetResumeLang === "en" ? "bg-blue-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                🇬🇧 EN
-              </button>
+              {DOC_LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => setTargetResumeLang(l.code)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
+                    targetResumeLang === l.code ? "bg-blue-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                  title={l.name}
+                >
+                  <span>{l.flag}</span>
+                  <span>{l.code.toUpperCase()}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Textarea dla Oferty Pracy */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-500">{t.jobOfferLabel}</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-500">{t.jobOfferLabel}</label>
+            <span className="text-[10px] text-slate-400 italic">{t.generateGeneralCvHint}</span>
+          </div>
           <textarea
             value={jobOffer}
             onChange={(e) => setJobOffer(e.target.value)}
@@ -397,7 +540,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
         <div className="flex justify-end">
           <button
             onClick={() => onGenerate(jobOffer, includePhoto, selectedTemplateId, targetResumeLang)}
-            disabled={isGenerating || !jobOffer.trim()}
+            disabled={isGenerating}
             className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
           >
             {isGenerating ? (
@@ -407,7 +550,10 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 animate-bounce" /> {t.generateWithAiBtn} ({targetResumeLang.toUpperCase()})
+                <Sparkles className="w-4 h-4 animate-bounce" />
+                {jobOffer.trim()
+                  ? `${t.generateWithAiBtn} (${targetResumeLang.toUpperCase()})`
+                  : `${t.generateGeneralCvBtn} (${targetResumeLang.toUpperCase()})`}
               </>
             )}
           </button>
@@ -462,6 +608,80 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
 
           {/* Podgląd CV (Markdown) */}
           <div className="lg:col-span-2 space-y-4">
+            {/* PASEK WYBORU JĘZYKA PODGLĄDU (LOOKUP) ORAZ EKSPORTU */}
+            <div className="no-print bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-xl text-indigo-300">
+                  <Globe2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white font-display">{t.lookupLangLabel}</span>
+                    <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-full font-semibold uppercase">
+                      {lookupLanguage.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-indigo-200/70">{t.lookupLangDesc}</p>
+                </div>
+              </div>
+
+              {/* Przyciski zmiany języka podglądu (Lookup) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="inline-flex bg-white/10 p-0.5 rounded-xl border border-white/15">
+                  {DOC_LANGUAGES.map((l) => {
+                    const isActive = lookupLanguage === l.code;
+                    return (
+                      <button
+                        key={l.code}
+                        type="button"
+                        disabled={isTranslating}
+                        onClick={() => handleSwitchLookupLanguage(l.code)}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-300 hover:text-white hover:bg-white/10"
+                        }`}
+                        title={`${l.name} (${l.code.toUpperCase()})`}
+                      >
+                        <span>{l.flag}</span>
+                        <span className="text-[11px]">{l.code.toUpperCase()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Przycisk otwarcia modalu opcji eksportu pliku */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExportLanguage(lookupLanguage);
+                    setShowExportModal(true);
+                  }}
+                  className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  title="Wybierz język oraz format eksportowanego pliku (PDF, MD, TXT)"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>{t.exportFileBtn}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Komunikat o trwającym tłumaczeniu podglądu */}
+            {isTranslating && (
+              <div className="no-print bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-2.5 rounded-xl flex items-center gap-2.5 text-xs font-semibold animate-pulse shadow-2xs">
+                <div className="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+                <span>{interpolate(t.translatingLookup, { lang: DOC_LANGUAGES.find(l => l.code === lookupLanguage)?.name || lookupLanguage.toUpperCase() })}</span>
+              </div>
+            )}
+
+            {/* Komunikat o sukcesie */}
+            {toastMsg && (
+              <div className="no-print bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-2xs">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{toastMsg}</span>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between no-print bg-white rounded-xl border border-slate-100 p-4 gap-3">
               <div className="space-y-1">
                 <span className="text-xs font-bold text-slate-600 block">{t.readyDocPreview}</span>
@@ -498,11 +718,12 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   {copied ? t.copiedBtn : t.copyBtn}
                 </button>
 
+                {/* Szybki przycisk pobierania PDF w bieżącym języku */}
                 <button
-                  onClick={handleDownloadPdf}
-                  disabled={isExportingPdf}
+                  onClick={() => handleDownloadPdf(lookupLanguage)}
+                  disabled={isExportingPdf || isTranslating}
                   className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
-                  title="Pobierz gotowy dokument jako plik PDF"
+                  title={`Pobierz plik PDF w języku ${lookupLanguage.toUpperCase()}`}
                 >
                   {isExportingPdf ? (
                     <>
@@ -517,7 +738,7 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      <span>{t.downloadPdfBtn}</span>
+                      <span>{t.downloadPdfBtn} ({lookupLanguage.toUpperCase()})</span>
                     </>
                   )}
                 </button>
@@ -810,6 +1031,185 @@ export const TailoredResumeGenerator: React.FC<Props> = ({
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
               {t.geminiModelingDesc} <strong className="text-blue-600">{activeTemplate.name}</strong>.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL WYBORU JĘZYKA I FORMATU EKSPORTOWANEGO PLIKU */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+            {/* Header modalu */}
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-xl text-emerald-400">
+                  <FileDown className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm font-display">{t.exportFileBtn}</h3>
+                  <p className="text-[10px] text-indigo-200/80">{t.exportOptionsTitle}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Sekcja 1: Wybór języka eksportowanego pliku */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Globe2 className="w-4 h-4 text-indigo-600" />
+                    {t.exportLangLabel}
+                  </span>
+                  <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
+                    {DOC_LANGUAGES.find(l => l.code === exportLanguage)?.name || exportLanguage.toUpperCase()}
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {DOC_LANGUAGES.map((l) => {
+                    const isSelected = exportLanguage === l.code;
+                    return (
+                      <button
+                        key={l.code}
+                        type="button"
+                        onClick={() => setExportLanguage(l.code)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 ${
+                          isSelected
+                            ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 font-bold ring-2 ring-indigo-500/10 shadow-2xs"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
+                        }`}
+                      >
+                        <span className="text-base">{l.flag}</span>
+                        <div className="truncate">
+                          <span className="block text-xs leading-none">{l.name}</span>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">{l.code}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Sekcja 2: Format eksportu */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  {t.exportFormatLabel}
+                </label>
+                <div className="space-y-2">
+                  <label
+                    onClick={() => setExportFormat("pdf")}
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      exportFormat === "pdf"
+                        ? "border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/10"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                        PDF
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">{t.exportAsPdf}</span>
+                        <span className="text-[10px] text-slate-400">A4 • Render stylizowany • Gotowy do wysłania</span>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      checked={exportFormat === "pdf"}
+                      onChange={() => setExportFormat("pdf")}
+                      className="text-blue-600"
+                    />
+                  </label>
+
+                  <label
+                    onClick={() => setExportFormat("md")}
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      exportFormat === "md"
+                        ? "border-indigo-500 bg-indigo-50/50 ring-2 ring-indigo-500/10"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                        MD
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">{t.exportAsMd}</span>
+                        <span className="text-[10px] text-slate-400">Tekst ze znacznikami Markdown (.md)</span>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      checked={exportFormat === "md"}
+                      onChange={() => setExportFormat("md")}
+                      className="text-indigo-600"
+                    />
+                  </label>
+
+                  <label
+                    onClick={() => setExportFormat("txt")}
+                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      exportFormat === "txt"
+                        ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/10"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        TXT
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">{t.exportAsTxt}</span>
+                        <span className="text-[10px] text-slate-400">Czysty tekst bez formatowania (do portali pracy)</span>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="exportFormat"
+                      checked={exportFormat === "txt"}
+                      onChange={() => setExportFormat("txt")}
+                      className="text-emerald-600"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Informacja o synchronizacji */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] text-slate-500 flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <span>{t.exportLangNotice}</span>
+              </div>
+            </div>
+
+            {/* Stopka modalu */}
+            <div className="bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteExport}
+                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>
+                  {t.downloadFileBtn} ({exportFormat.toUpperCase()} - {exportLanguage.toUpperCase()})
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       )}

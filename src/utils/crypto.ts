@@ -40,7 +40,7 @@ export function encryptProfile(profile: UserProfile): string {
 
 export function decryptProfile(encryptedString: string): UserProfile | null {
   if (!encryptedString.startsWith(FILE_HEADER)) {
-    throw new Error("Nieprawidłowy nagłówek pliku. Ten plik nie został utworzony przez tę aplikację.");
+    throw new Error("Nieprawidłowy nagłówek pliku. Ten plik nie został utworzony przez aplikację Ultimate CV.");
   }
 
   try {

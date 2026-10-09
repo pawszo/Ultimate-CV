@@ -3,7 +3,7 @@ export type Language = "pl" | "en";
 export const translations = {
   pl: {
     // Header & Meta
-    appTitle: "Cyfrowy Kreator CV",
+    appTitle: "Ultimate CV",
     appSubtitle: "Inteligentny Asystent Kariery & AI Generator",
     accountDetails: "Szczegóły konta",
     account: "Konto",
@@ -17,15 +17,19 @@ export const translations = {
     tabProfile: "Mój Profil",
     tabDocs: "Dokumenty & Analizy",
     tabAdvisor: "Doradca Kariery AI",
-    tabTailor: "Dopasuj CV do Oferty",
+    tabTailor: "Generator Ultimate CV",
     tabProfileShort: "Profil",
     tabDocsShort: "Dokumenty",
     tabAdvisorShort: "Doradca AI",
-    tabTailorShort: "Dopasuj",
+    tabTailorShort: "Ultimate CV",
     tabProfileLong: "1. Profil Kariery",
     tabDocsLong: "2. Skaner i Dokumenty",
     tabAdvisorLong: "3. Doradca AI i Wnioski",
-    tabTailorLong: "4. Dopasuj pod Ofertę",
+    tabTailorLong: "4. Generator Ultimate CV",
+
+    // Profile Tab Header
+    profileHeaderTitle: "Ultimate CV — Profil Kariery i Doświadczenie",
+    profileHeaderSub: "Kompletna baza Twoich kompetencji, doświadczeń i kwalifikacji pod generowanie spersonalizowanych CV.",
 
     // Status & Toasts
     loginSuccess: "Zalogowano pomyślnie jako {name}!",
@@ -60,13 +64,13 @@ export const translations = {
     close: "Zamknij",
 
     // Onboarding Modal
-    onboardingTitle: "Cyfrowy Kreator CV",
+    onboardingTitle: "Ultimate CV",
     onboardingSubtitle: "Inteligentny generator CV ze wsparciem Gemini AI",
-    onboardingWelcome: "Witaj w Cyfrowym Kreatorze CV!",
-    onboardingDesc: "Wybierz jedną z poniższych opcji, aby rozpocząć pracę ze swoim życiorysem:",
-    onboardingNew: "Stwórz nowe CV",
+    onboardingWelcome: "Witaj w Ultimate CV!",
+    onboardingDesc: "Wybierz jedną z poniższych opcji, aby rozpocząć pracę ze swoim życiorysem w Ultimate CV:",
+    onboardingNew: "Stwórz nowe Ultimate CV",
     onboardingNewSub: "Rozpocznij wypełnianie pustego profilu kariery krok po kroku.",
-    onboardingImport: "Wczytaj dane z pliku kopii",
+    onboardingImport: "Wczytaj z kopii Ultimate CV (.cvp)",
     onboardingImportSub: "Wczytaj wcześniej pobrany, bezpiecznie zaszyfrowany plik .cvp.",
     onboardingCloud: "Zaloguj się i pobierz z Chmury",
     onboardingCloudSub: "Połącz konto Google z Firebase i pobierz swój zapisany stan.",
@@ -74,7 +78,7 @@ export const translations = {
     onboardingBadge: "v1.2 Bezpieczna Kopia & Wielojęzyczność",
 
     // Account Details Modal
-    accountModalTitle: "Szczegóły Konta & Synchronizacja",
+    accountModalTitle: "Ultimate CV — Szczegóły Konta & Synchronizacja",
     identity: "Tożsamość",
     profileContents: "Zawartość Twojego Profilu",
     statExp: "Doświadczenie",
@@ -198,12 +202,12 @@ export const translations = {
     achTitleRequired: "Tytuł osiągnięcia jest wymagany.",
 
     // Documents & PDF Import Form
-    docsHeaderTitle: "Skaner i Notatki (Dokumenty)",
-    docsHeaderSub: "Dodaj referencje, notatki, linki lub całe opisy prac",
-    scannerTitle: "Inteligentny Skaner CV (Import z pliku PDF)",
+    docsHeaderTitle: "Ultimate CV — Skaner i Dokumenty Kariery",
+    docsHeaderSub: "Wgrywaj pliki PDF ze swoim dotychczasowym CV lub notatki tekstowe – AI przeanalizuje je i wyciągnie kompetencje do Twojego profilu Ultimate CV.",
+    scannerTitle: "Inteligentny Skaner CV (Import do Ultimate CV z pliku PDF)",
     scannerDropText: "Przeciągnij i upuść plik PDF ze swoim dotychczasowym CV lub",
     scannerSelectDisk: "wybierz go z dysku",
-    scannerSub: "Model Gemini Flash przeanalizuje plik i zaproponuje automatyczne uzupełnienie sekcji Twojego profilu zawodowego.",
+    scannerSub: "Model Gemini Flash przeanalizuje plik i zaproponuje automatyczne uzupełnienie Twojego profilu Ultimate CV.",
     scannerParsing: "Analizowanie pliku PDF przez Gemini Flash...",
     scannerSelectBtn: "Wybierz plik PDF",
     pdfOnlyAlert: "Obsługiwane są wyłącznie pliki PDF.",
@@ -222,8 +226,8 @@ export const translations = {
     docRequired: "Tytuł oraz treść/link są wymagane do analizy.",
 
     // AI Advisor
-    advisorHeaderTitle: "Inteligentny Doradca AI",
-    advisorHeaderSub: "Wskazówki i pytania dopasowane do Twojego profilu",
+    advisorHeaderTitle: "Ultimate CV — Inteligentny Doradca Kariery AI",
+    advisorHeaderSub: "Spersonalizowane wskazówki i pytania pogłębiające dopasowane do Twojego profilu Ultimate CV",
     refreshTipsBtn: "Odśwież wskazówki",
     refreshingTips: "Generowanie...",
     analyzingProfileQuestions: "Analizuję Twój profil i dobieram najcenniejsze pytania...",
@@ -240,8 +244,8 @@ export const translations = {
     answerRequiredAlert: "Proszę wpisać treść odpowiedzi przed wysłaniem.",
 
     // Targeted Resume Generator
-    tailorTitle: "Generator Dopasowanego CV",
-    tailorSubtitle: "Wklej ogłoszenie o pracę, a Gemini przygotuje perfekcyjnie dopasowane CV w wybranym stylu",
+    tailorTitle: "Ultimate CV — Generator Dopasowanego Życiorysu",
+    tailorSubtitle: "Wklej ogłoszenie o pracę, a Gemini przygotuje perfekcyjnie dopasowane Ultimate CV w wybranym stylu",
     jobOfferLabel: "Treść Oferty Pracy (Wymagania i Opis Stanowiska)",
     jobOfferPlaceholder: "Wklej tutaj treść ogłoszenia o pracę (wymagania, opis stanowiska, technologie)...",
     templateStyleLabel: "Wybierz Styl i Układ CV:",
@@ -256,9 +260,32 @@ export const translations = {
     tailoredSummaryTitle: "Podsumowanie zawodowe (Dopasowane)",
     readyDocPreview: "Podgląd gotowego dokumentu",
     switchTemplateFly: "Przełączaj szablon poniżej, aby zmienić styl w locie!",
-    geminiModeling: "Gemini modeluje Twoje CV",
+    geminiModeling: "Gemini modeluje Twoje Ultimate CV",
     geminiModelingDesc: "Analizuję wymagania oferty i optymalizuję pod nie doświadczenie i umiejętności w wybranym stylu.",
     resumeLangBadge: "Język CV:",
+    lookupLangLabel: "Język podglądu (Lookup):",
+    lookupLangDesc: "Wybierz język, w jakim chcesz oglądać dokument",
+    exportLangLabel: "Język eksportowanego pliku:",
+    exportFileLanguage: "Język pliku:",
+    translatingLookup: "Tłumaczenie podglądu dokumentu na {lang}...",
+    exportFileBtn: "Eksportuj plik",
+    exportOptionsTitle: "Eksportuj Ultimate CV — Wybór języka i formatu pliku",
+    exportFormatLabel: "Format pliku:",
+    exportAsPdf: "Dokument PDF gotowy do druku (.pdf)",
+    exportAsMd: "Plik Markdown (.md)",
+    exportAsTxt: "Czysty tekst (.txt)",
+    downloadFileBtn: "Pobierz plik",
+    exportLangNotice: "Podgląd i eksportowany plik zostaną zsynchronizowane z wybranym językiem.",
+    generateGeneralCvBtn: "Generuj ogólne CV (z profilu)",
+    generateGeneralCvHint: "Brak konkretnej oferty? Kliknij, aby wygenerować pełne CV ze swojego profilu.",
+    langPl: "Polski (PL)",
+    langEn: "Angielski (EN)",
+    langDe: "Niemiecki (DE)",
+    langEs: "Hiszpański (ES)",
+    langFr: "Francuski (FR)",
+    translateSuccess: "Pomyślnie przetłumaczono podgląd i plik na {lang}!",
+    downloadedMd: "Pobrano plik Markdown (.md)!",
+    downloadedTxt: "Pobrano plik tekstowy (.txt)!",
 
     // Toolbar & Preview
     previewDocTab: "Podgląd dokumentu",
@@ -292,15 +319,15 @@ export const translations = {
     shrinkToOnePageBtn: "Zmniejsz czcionkę do 1 strony →",
 
     // PDF Import Modal
-    pdfModalTitle: "Import Danych z Pliku PDF",
+    pdfModalTitle: "Import Danych z Pliku PDF do Ultimate CV",
     pdfModalSub: "Wybierz, które wyekstrahowane dane chcesz dołączyć do swojego profilu:",
     selectAll: "Zaznacz wszystko",
     deselectAll: "Odznacz wszystko",
     applySelected: "Zastosuj zaznaczone dane",
 
     // Footer
-    footerTitle: "Cyfrowy Kreator CV • Wspierany przez Gemini Flash",
-    footerSub: "Projekt wspierany przez doradców kariery. Wszystkie Twoje dane są zapisywane lokalnie i w zabezpieczonej chmurze.",
+    footerTitle: "Ultimate CV • Napędzany przez Gemini AI Flash",
+    footerSub: "Inteligentny generator życiorysów zawodowych. Wszystkie Twoje dane są zapisywane lokalnie i w zabezpieczonej chmurze.",
 
     // Language switcher
     switchLanguage: "Język interfejsu (Interface Language)",
@@ -308,7 +335,7 @@ export const translations = {
 
   en: {
     // Header & Meta
-    appTitle: "Digital Resume Builder",
+    appTitle: "Ultimate CV",
     appSubtitle: "Smart Career Assistant & AI Resume Generator",
     accountDetails: "Account Details",
     account: "Account",
@@ -322,15 +349,19 @@ export const translations = {
     tabProfile: "My Profile",
     tabDocs: "Documents & Analysis",
     tabAdvisor: "AI Career Advisor",
-    tabTailor: "Tailor Resume to Job",
+    tabTailor: "Ultimate CV Generator",
     tabProfileShort: "Profile",
     tabDocsShort: "Documents",
     tabAdvisorShort: "AI Advisor",
-    tabTailorShort: "Tailor",
+    tabTailorShort: "Ultimate CV",
     tabProfileLong: "1. Career Profile",
     tabDocsLong: "2. Scanner & Documents",
     tabAdvisorLong: "3. AI Advisor & Insights",
-    tabTailorLong: "4. Tailor to Job",
+    tabTailorLong: "4. Ultimate CV Generator",
+
+    // Profile Tab Header
+    profileHeaderTitle: "Ultimate CV — Career Profile & Experience",
+    profileHeaderSub: "Complete knowledge base of your skills, roles, and achievements used to tailor personal CVs.",
 
     // Status & Toasts
     loginSuccess: "Successfully signed in as {name}!",
@@ -365,13 +396,13 @@ export const translations = {
     close: "Close",
 
     // Onboarding Modal
-    onboardingTitle: "Digital Resume Builder",
+    onboardingTitle: "Ultimate CV",
     onboardingSubtitle: "Smart resume builder powered by Gemini AI",
-    onboardingWelcome: "Welcome to Digital Resume Builder!",
-    onboardingDesc: "Choose one of the options below to get started with your resume:",
-    onboardingNew: "Create New Resume",
+    onboardingWelcome: "Welcome to Ultimate CV!",
+    onboardingDesc: "Choose one of the options below to get started with your Ultimate CV:",
+    onboardingNew: "Create New Ultimate CV",
     onboardingNewSub: "Start filling out a clean career profile step-by-step.",
-    onboardingImport: "Load from Backup File",
+    onboardingImport: "Load from Ultimate CV Backup (.cvp)",
     onboardingImportSub: "Restore from a previously exported encrypted .cvp file.",
     onboardingCloud: "Sign In & Load from Cloud",
     onboardingCloudSub: "Connect Google with Firebase and fetch your saved resume state.",
@@ -379,7 +410,7 @@ export const translations = {
     onboardingBadge: "v1.2 Secure Backup & Bilingual UI",
 
     // Account Details Modal
-    accountModalTitle: "Account Details & Cloud Sync",
+    accountModalTitle: "Ultimate CV — Account Details & Cloud Sync",
     identity: "Identity",
     profileContents: "Your Profile Overview",
     statExp: "Experience",
@@ -503,12 +534,12 @@ export const translations = {
     achTitleRequired: "Achievement title is required.",
 
     // Documents & PDF Import Form
-    docsHeaderTitle: "Scanner & Notes (Documents)",
-    docsHeaderSub: "Add references, notes, links, or full project writeups",
-    scannerTitle: "Smart Resume Scanner (PDF Import)",
+    docsHeaderTitle: "Ultimate CV — Scanner & Career Documents",
+    docsHeaderSub: "Upload PDF resumes or text notes – AI analyzes them and extracts competencies into your Ultimate CV profile.",
+    scannerTitle: "Smart Resume Scanner (PDF Import to Ultimate CV)",
     scannerDropText: "Drag and drop a PDF file with your existing resume or",
     scannerSelectDisk: "choose from disk",
-    scannerSub: "Gemini Flash will analyze the file and propose automatic completion of your profile sections.",
+    scannerSub: "Gemini Flash will analyze the file and propose automatic completion of your Ultimate CV profile sections.",
     scannerParsing: "Analyzing PDF file with Gemini Flash...",
     scannerSelectBtn: "Select PDF File",
     pdfOnlyAlert: "Only PDF files are supported.",
@@ -527,8 +558,8 @@ export const translations = {
     docRequired: "Title and content/link are required for analysis.",
 
     // AI Advisor
-    advisorHeaderTitle: "Intelligent AI Advisor",
-    advisorHeaderSub: "Guidance and questions tailored to your profile",
+    advisorHeaderTitle: "Ultimate CV — Intelligent AI Career Advisor",
+    advisorHeaderSub: "Personalized insights and in-depth career questions tailored to your Ultimate CV profile",
     refreshTipsBtn: "Refresh Tips",
     refreshingTips: "Generating...",
     analyzingProfileQuestions: "Analyzing your profile and picking high-value questions...",
@@ -545,8 +576,8 @@ export const translations = {
     answerRequiredAlert: "Please enter an answer before sending.",
 
     // Targeted Resume Generator
-    tailorTitle: "Job-Targeted Resume Generator",
-    tailorSubtitle: "Paste a job description, and Gemini will craft a perfectly tailored resume in your chosen style",
+    tailorTitle: "Ultimate CV — Job-Targeted Resume Generator",
+    tailorSubtitle: "Paste a job description, and Gemini will craft a perfectly tailored Ultimate CV in your chosen style",
     jobOfferLabel: "Job Posting Content (Requirements & Description)",
     jobOfferPlaceholder: "Paste the job description here (requirements, responsibilities, tech stack)...",
     templateStyleLabel: "Choose Resume Style & Layout:",
@@ -561,9 +592,32 @@ export const translations = {
     tailoredSummaryTitle: "Professional Summary (Tailored)",
     readyDocPreview: "Finished Document Preview",
     switchTemplateFly: "Switch template below to change styling on the fly!",
-    geminiModeling: "Gemini is modeling your resume",
+    geminiModeling: "Gemini is modeling your Ultimate CV",
     geminiModelingDesc: "Analyzing job requirements and optimizing experience and skills in the selected style.",
     resumeLangBadge: "Resume Lang:",
+    lookupLangLabel: "Lookup Language:",
+    lookupLangDesc: "Select the language in which you want to view the document",
+    exportLangLabel: "Exported File Language:",
+    exportFileLanguage: "File Language:",
+    translatingLookup: "Translating document lookup to {lang}...",
+    exportFileBtn: "Export File",
+    exportOptionsTitle: "Export Ultimate CV — Choose Language & Format",
+    exportFormatLabel: "File Format:",
+    exportAsPdf: "Print-ready PDF Document (.pdf)",
+    exportAsMd: "Markdown File (.md)",
+    exportAsTxt: "Plain Text (.txt)",
+    downloadFileBtn: "Download File",
+    exportLangNotice: "Document lookup and exported file will both be in the chosen language.",
+    generateGeneralCvBtn: "Generate General CV (from profile)",
+    generateGeneralCvHint: "No specific job posting? Click to generate a full CV directly from your profile.",
+    langPl: "Polish (PL)",
+    langEn: "English (EN)",
+    langDe: "German (DE)",
+    langEs: "Spanish (ES)",
+    langFr: "French (FR)",
+    translateSuccess: "Document lookup and exported file successfully translated to {lang}!",
+    downloadedMd: "Markdown file (.md) downloaded!",
+    downloadedTxt: "Plain text file (.txt) downloaded!",
 
     // Toolbar & Preview
     previewDocTab: "Document Preview",
@@ -597,15 +651,15 @@ export const translations = {
     shrinkToOnePageBtn: "Reduce font size to fit 1 page →",
 
     // PDF Import Modal
-    pdfModalTitle: "Import Data from PDF File",
+    pdfModalTitle: "Import Data from PDF into Ultimate CV",
     pdfModalSub: "Select extracted items you want to include in your profile:",
     selectAll: "Select all",
     deselectAll: "Deselect all",
     applySelected: "Apply Selected Data",
 
     // Footer
-    footerTitle: "Digital Resume Builder • Powered by Gemini Flash",
-    footerSub: "Career advisor-backed builder. All your data is saved locally and securely in cloud.",
+    footerTitle: "Ultimate CV • Powered by Gemini AI Flash",
+    footerSub: "Career advisor-backed resume builder. All your data is saved locally and securely in cloud.",
 
     // Language switcher
     switchLanguage: "Interface Language (Język interfejsu)",
